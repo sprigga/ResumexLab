@@ -25,6 +25,7 @@ wheels/
 *.db-journal
 
 # Environment
+.env
 .venv/
 env/
 venv/

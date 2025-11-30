@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-from typing import Optional
+import secrets
 
 
 class Settings(BaseSettings):
@@ -17,15 +17,18 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./backend/resume.db"
 
     # Security
-    SECRET_KEY: str = "your-secret-key-change-this-in-production"
+    # 原本硬編碼設定 (已註解於 2025-11-30，原因：修正 GitGuardian 安全警告，改用環境變數)
+    # SECRET_KEY: str = "your-secret-key-change-this-in-production"
+    # 新設定：從環境變數讀取，若無則自動生成（僅供開發使用）
+    SECRET_KEY: str = secrets.token_urlsafe(32)
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
 
     # CORS
     # 原本設定 (已註解於 2025-11-30，原因：新增實際前端運行端口 5175)
     # BACKEND_CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:3000"]
-    # 新設定：包含所有可能的前端端口
-    BACKEND_CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:5175", "http://localhost:3000"]
+    # 新設定：包含所有可能的前端端口（已更新於 2025-11-30，原因：新增容器端口 58432）
+    BACKEND_CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:5175", "http://localhost:3000", "http://localhost:58432"]
 
     class Config:
         case_sensitive = True
