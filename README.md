@@ -569,7 +569,41 @@ git clone <repository-url>
 cd resumexlab
 ```
 
-2. 安裝 Python 依賴 (使用 uv)
+2. 配置環境變數
+```bash
+# 進入後端目錄
+cd backend
+
+# 複製 .env.example 為 .env
+cp .env.example .env
+
+# 編輯 .env 檔案，根據需要修改配置（特別是 SECRET_KEY）
+# 使用以下命令生成安全的 SECRET_KEY：
+# python -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+3. 建立資料庫目錄
+```bash
+# 在 backend 目錄下建立 data 目錄
+mkdir -p data
+
+# (Linux/macOS) 確保資料夾有足夠的權限
+chmod 755 data
+
+# (若需要完全控制，使用以下命令)
+chmod 755 ..
+```
+
+4. 初始化資料庫
+```bash
+# 返回專案根目錄
+cd ..
+
+# 執行資料庫建立腳本
+python script/create_database.py
+```
+
+5. 安裝 Python 依賴 (使用 uv)
 ```bash
 cd backend
 uv venv
@@ -577,7 +611,7 @@ source .venv/bin/activate
 uv pip install -r requirements.txt
 ```
 
-3. 安裝 Node.js 依賴
+6. 安裝 Node.js 依賴
 ```bash
 cd frontend
 npm install
