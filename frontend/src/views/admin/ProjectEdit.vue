@@ -28,9 +28,12 @@ onMounted(async () => {
 const loadProjects = async () => {
   loading.value = true
   try {
-    await resumeStore.fetchProjects()
+    await Promise.all([
+      resumeStore.fetchProjects(),
+      resumeStore.fetchWorkExperiences()
+    ])
   } catch (error) {
-    ElMessage.error('Failed to load projects')
+    ElMessage.error('Failed to load projects or work experiences')
   } finally {
     loading.value = false
   }
@@ -107,6 +110,12 @@ const handleDelete = async (id) => {
     loading.value = false
   }
 }
+
+const getCompanyName = (workExperienceId) => {
+  if (!workExperienceId || !resumeStore.workExperiences) return 'N/A'
+  const workExp = resumeStore.workExperiences.find(we => we.id === workExperienceId)
+  return workExp ? (workExp.company_en || workExp.company_zh || 'N/A') : 'N/A'
+}
 </script>
 
 <template>
@@ -143,6 +152,14 @@ const handleDelete = async (id) => {
       width="80%"
     >
       <el-form :model="formData" label-width="150px" label-position="top">
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="Company">
+              <el-tag type="info" size="large">{{ getCompanyName(formData.work_experience_id) || 'N/A' }}</el-tag>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="Title (Chinese)">

@@ -25,7 +25,7 @@ class Project(Base):
 
     # Relationships
     work_experience = relationship("WorkExperience", back_populates="projects")
-    details = relationship("ProjectDetail", back_populates="project", cascade="all, delete-orphan")
+    details = relationship("ProjectDetail", back_populates="project", cascade="all, delete-orphan", order_by="ProjectDetail.display_order")
 
 
 class ProjectDetail(Base):
@@ -43,7 +43,7 @@ class ProjectDetail(Base):
 
     # Relationships
     project = relationship("Project", back_populates="details")
-    attachments = relationship("ProjectAttachment", back_populates="project_detail", cascade="all, delete-orphan")
+    attachments = relationship("ProjectAttachment", back_populates="project_detail", cascade="all, delete-orphan", order_by="ProjectAttachment.display_order")
 
 
 class ProjectAttachment(Base):

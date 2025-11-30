@@ -60,10 +60,12 @@ const getField = (obj, fieldPrefix) => {
 // Reason: Support collapsing projects beyond the first 5
 const getVisibleProjects = (expId, projects) => {
   if (!projects || projects.length === 0) return []
+  // Sort projects by display_order in ascending order
+  const sortedProjects = [...projects].sort((a, b) => (a.display_order || 0) - (b.display_order || 0))
   if (showAllProjects.value[expId]) {
-    return projects
+    return sortedProjects
   }
-  return projects.slice(0, 5)
+  return sortedProjects.slice(0, 5)
 }
 
 // Modified on 2025-11-30: Added function to toggle showing all projects
@@ -306,7 +308,7 @@ const toggleShowAllGithubProjects = () => {
 /* Updated on 2025-11-30 - Changed max-width from 900px to 1200px */
 /* Reason: User requested wider layout to accommodate full publication titles */
 .resume-container {
-  max-width: 1000px;
+  max-width: 950px;
   margin: 0 auto;
   padding: 20px;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
