@@ -25,6 +25,9 @@ const menuItems = [
   { path: '/admin/education', label: 'Education', icon: 'School' },
   { path: '/admin/certifications', label: 'Certifications', icon: 'Medal' },
   { path: '/admin/publications', label: 'Publications', icon: 'Reading' },
+  // 已新增於 2025-11-30，原因：新增 GitHub 專案管理選單項目
+  { path: '/admin/github-projects', label: 'GitHub Projects', icon: 'Link' },
+  { path: '/admin/import-data', label: 'Import Data', icon: 'Upload' },
 ]
 </script>
 

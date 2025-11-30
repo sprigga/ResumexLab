@@ -16,6 +16,9 @@ from app.api.endpoints import (
     github_projects
 )
 
+# 已新增於 2025-11-30，原因：新增匯入履歷資料相關的 API 端點
+from app.api.endpoints import import_data
+
 # Create database tables
 Base.metadata.create_all(bind=engine)
 
@@ -53,6 +56,9 @@ app.include_router(certifications.router, prefix=f"{settings.API_V1_STR}/certifi
 app.include_router(languages.router, prefix=f"{settings.API_V1_STR}/languages", tags=["Languages"])
 app.include_router(publications.router, prefix=f"{settings.API_V1_STR}/publications", tags=["Publications"])
 app.include_router(github_projects.router, prefix=f"{settings.API_V1_STR}/github-projects", tags=["GitHub Projects"])
+
+# 已新增於 2025-11-30，原因：新增匯入履歷資料相關的路由
+app.include_router(import_data.router, prefix=f"{settings.API_V1_STR}/import", tags=["Import"])
 
 
 @app.get("/")

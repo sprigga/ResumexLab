@@ -16,12 +16,14 @@ const routes = [
   },
   {
     path: '/admin',
-    name: 'Admin',
+    // 原本設定 (已註解於 2025-11-30，原因：修復 Vue Router 警告 - 父路由不應有名稱，空路徑子路由應有名稱)
+    // name: 'Admin',
     component: () => import('@/views/admin/AdminLayout.vue'),
     meta: { requiresAuth: true },
     children: [
       {
         path: '',
+        name: 'Admin',
         redirect: '/admin/dashboard',
       },
       {
@@ -62,6 +64,18 @@ const routes = [
         path: 'publications',
         name: 'Publications',
         component: () => import('@/views/admin/PublicationEdit.vue'),
+      },
+      // 已新增於 2025-11-30，原因：新增 GitHub 專案管理路由
+      {
+        path: 'github-projects',
+        name: 'GithubProjects',
+        component: () => import('@/views/admin/GithubProjectEdit.vue'),
+      },
+      // 已新增於 2025-11-30，原因：新增匯入履歷資料管理路由
+      {
+        path: 'import-data',
+        name: 'ImportData',
+        component: () => import('@/views/admin/ImportDataView.vue'),
       },
     ],
   },

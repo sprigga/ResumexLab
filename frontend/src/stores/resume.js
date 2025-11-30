@@ -485,6 +485,79 @@ export const useResumeStore = defineStore('resume', () => {
     }
   }
 
+  // Import Data functions - 已新增於 2025-11-30
+  async function importPdf(file, importType = 'pdf_extraction') {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await resumeAPI.importPdf(file, importType)
+      return response.data
+    } catch (err) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function importResumeData() {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await resumeAPI.importResumeData()
+      return response.data
+    } catch (err) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function createDatabase() {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await resumeAPI.createDatabase()
+      return response.data
+    } catch (err) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 已新增於 2025-11-30，原因：新增資料庫匯出功能以方便遷移主機
+  async function exportDatabase() {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await resumeAPI.exportDatabase()
+      return response
+    } catch (err) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 已新增於 2025-11-30，原因：新增資料庫匯入功能以方便遷移主機
+  async function importDatabase(file) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await resumeAPI.importDatabase(file)
+      return response.data
+    } catch (err) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     personalInfo,
     workExperiences,
@@ -526,5 +599,10 @@ export const useResumeStore = defineStore('resume', () => {
     createGithubProject,
     updateGithubProject,
     deleteGithubProject,
+    importPdf,
+    importResumeData,
+    createDatabase,
+    exportDatabase,
+    importDatabase,
   }
 })

@@ -22,7 +22,10 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
 
     # CORS
-    BACKEND_CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:3000"]
+    # 原本設定 (已註解於 2025-11-30，原因：新增實際前端運行端口 5175)
+    # BACKEND_CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:3000"]
+    # 新設定：包含所有可能的前端端口
+    BACKEND_CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:5175", "http://localhost:3000"]
 
     class Config:
         case_sensitive = True

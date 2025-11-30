@@ -3,6 +3,10 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
+// 原本設定 (已註解於 2025-11-30，原因：缺少圖示組件導入)
+// import { useAuthStore } from '@/stores/auth'
+// 新設定：新增 User 和 Lock 圖示組件導入
+import { User, Lock } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 
 const { t } = useI18n()

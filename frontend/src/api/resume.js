@@ -143,4 +143,42 @@ export const resumeAPI = {
   deleteGithubProject(id) {
     return apiClient.delete(`/github-projects/${id}`)
   },
+
+  // Import Data - 已新增於 2025-11-30，原因：新增匯入履歷資料功能
+  importPdf(file, importType = 'pdf_extraction') {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('import_type', importType)
+    return apiClient.post('/import/pdf/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  },
+
+  importResumeData() {
+    return apiClient.post('/import/resume-data/')
+  },
+
+  createDatabase() {
+    return apiClient.post('/import/database/')
+  },
+
+  // 已新增於 2025-11-30，原因：新增資料庫匯出功能以方便遷移主機
+  exportDatabase() {
+    return apiClient.get('/import/database/export/', {
+      responseType: 'blob'
+    })
+  },
+
+  // 已新增於 2025-11-30，原因：新增資料庫匯入功能以方便遷移主機
+  importDatabase(file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return apiClient.post('/import/database/import/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    })
+  },
 }
