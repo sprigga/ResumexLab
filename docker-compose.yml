@@ -1,0 +1,81 @@
+# Docker Compose 配置文件
+# Resume Management System - 個人履歷管理系統
+# 包含: Frontend (Vue.js + Nginx), Backend (FastAPI), Database (SQLite)
+
+# version: '3.8'
+
+services:
+  # 後端服務 - FastAPI
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: resumexlab-backend
+    restart: unless-stopped
+    ports:
+      # 原設定: "8000:8000" - 改為冷門端口避免衝突與安全風險
+      # 修改日期: 2025-11-29
+      - "58433:8000"
+    environment:
+      # API 設定
+      - PROJECT_NAME=Resume Management System
+      - VERSION=1.0.0
+      - API_V1_STR=/api/v1
+
+      # 資料庫設定 (SQLite)
+      - DATABASE_URL=sqlite:///./data/resume.db
+
+      # JWT 設定
+      - SECRET_KEY=your-secret-key-change-this-in-production
+      - ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=1440
+
+      # CORS 設定
+      # 原設定: ["http://localhost:3000","http://localhost:8080","http://localhost"]
+      # 修改日期: 2025-11-29 - 更新為新的 frontend port
+      - BACKEND_CORS_ORIGINS=["http://localhost:58432","http://localhost:3000","http://localhost:8080","http://localhost"]
+    volumes:
+      # 掛載資料庫文件，確保數據持久化
+      - ./backend/data:/app/data
+      # 開發模式下可選：掛載程式碼以支援熱重載
+      # - ./backend/app:/app/app
+    networks:
+      - resumexlab-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 前端服務 - Vue.js + Nginx
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: resumexlab-frontend
+    restart: unless-stopped
+    ports:
+      # 原設定: "80:80" - 改為冷門端口避免衝突與安全風險
+      # 修改日期: 2025-11-29
+      - "58432:80"
+    depends_on:
+      - backend
+    networks:
+      - resumexlab-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+# 網路設定
+networks:
+  resumexlab-network:
+    driver: bridge
+
+# Volume 設定（可選，用於更明確的數據管理）
+# volumes:
+#   backend-data:
+#     driver: local

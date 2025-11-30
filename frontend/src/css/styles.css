@@ -1,0 +1,81 @@
+:root{
+  /* 主題色可微調 */
+  --top-color: #030406;     /* 上方近黑 */
+  --mid-color: #0f1330;     /* 深藍 */
+  --lower-mid: #40404a;     /* 深藍灰 */
+  --bottom-color: #8b8b93;  /* 底部灰 */
+  --text-color: #ffffff;
+  --accent: rgba(0,0,0,0.25);
+}
+
+/* 全頁背景漸層 */
+html, body{
+  height:100%;
+  margin:0;
+  font-family: -apple-system, "Helvetica Neue", "Segoe UI", Roboto, "Noto Sans", Arial, "PingFang TC", "Microsoft JhengHei", sans-serif;
+  -webkit-font-smoothing:antialiased;
+  background: linear-gradient(
+    to bottom,
+    var(--top-color) 0%,
+    var(--mid-color) 30%,
+    var(--lower-mid) 65%,
+    var(--bottom-color) 100%
+  );
+}
+
+/* slide 置中布局 */
+.slide {
+  min-height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  position:relative;
+  color:var(--text-color);
+  padding:6vh 5vw;
+  box-sizing:border-box;
+}
+
+/* 漸層深度效果（高仿 Keynote） */
+.slide::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  background:
+    radial-gradient(1200px 600px at 50% 10%, rgba(255,255,255,0.02), transparent 20%),
+    linear-gradient(to bottom, rgba(0,0,0,0.0) 0%, rgba(0,0,0,0.15) 65%, rgba(0,0,0,0.35) 100%);
+  mix-blend-mode:multiply;
+}
+
+/* vignette 內陰影 */
+.slide::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  box-shadow: inset 0 0 120px var(--accent);
+}
+
+/* 文字設計 */
+h1{
+  margin:0;
+  font-size:clamp(36px, 8vw, 96px);
+  font-weight:300;
+  letter-spacing:0.02em;
+  line-height:1.05;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.25);
+}
+
+.meta {
+  margin-top:1.25rem;
+  font-size:clamp(14px, 2.4vw, 24px);
+  font-weight:400;
+  opacity:0.95;
+}
+
+/* 小螢幕微調 */
+@media (max-width:480px){
+  .slide{ padding:8vh 4vw; }
+  h1{ font-size:28px; }
+}
