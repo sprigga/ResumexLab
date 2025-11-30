@@ -1,0 +1,85 @@
+@startuml Resume Management System Activity Diagram
+!theme plain
+title 個人履歷管理系統 - 活動圖
+
+start
+:使用者訪問應用;
+
+if (選擇模式?) then (前台)
+  :進入履歷展示頁面;
+  :載入個人資訊和履歷內容;
+  :顯示個人基本資訊;
+  :顯示工作經歷;
+  :顯示教育背景;
+  :顯示證照與語言;
+  :顯示專案與著作;
+
+  while (使用者繼續?) is (是)
+    if (選擇操作?) then (切換語言)
+      :選擇中文或英文;
+      :更新頁面內容;
+      :儲存語言偏好;
+    elseif (選擇操作?) then (瀏覽履歷)
+      :展開專案詳情;
+      :查看履歷內容;
+    elseif (選擇操作?) then (下載PDF)
+      :生成PDF檔案;
+      :下載履歷;
+    else (離開)
+      break
+    endif
+  end while
+
+else (後台)
+  :進入後台管理介面;
+  :跳轉至登入頁面;
+  :輸入帳號密碼;
+  :驗證使用者身份;
+
+  if (認證成功?) then (是)
+    :發放 JWT Token;
+    :進入 Dashboard;
+
+    while (管理員繼續?) is (是)
+      if (選擇功能?) then (個人資訊)
+        :編輯姓名聯絡方式;
+        :編輯職涯目標描述;
+        :保存變更至資料庫;
+      elseif (選擇功能?) then (工作經歷)
+        :新增或編輯工作經歷;
+        :新增相關專案;
+        :上傳專案附件;
+        :保存至資料庫;
+      elseif (選擇功能?) then (教育背景)
+        :新增或編輯教育背景;
+        :保存至資料庫;
+      elseif (選擇功能?) then (證照與語言)
+        :管理證照資訊;
+        :管理語言能力;
+        :保存至資料庫;
+      elseif (選擇功能?) then (著作與GitHub)
+        :管理學術著作;
+        :管理GitHub專案;
+        :保存至資料庫;
+      elseif (選擇功能?) then (批量匯入)
+        :上傳CSV或Excel檔案;
+        :驗證資料格式;
+        :批量匯入履歷資料;
+      else (登出)
+        break
+      endif
+    end while
+
+    :清除 JWT Token;
+    :返回登入頁面;
+
+  else (否)
+    :顯示認證失敗訊息;
+    :返回登入頁面;
+  endif
+endif
+
+:離開應用;
+stop
+
+@enduml

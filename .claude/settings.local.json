@@ -8,7 +8,8 @@
       "Bash(curl:*)",
       "Bash(python3:*)",
       "Bash(source backend/.venv/bin/activate)",
-      "Bash(uvicorn:*)"
+      "Bash(uvicorn:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

@@ -149,12 +149,13 @@ resumexlab/
 | 個人資訊管理 | ✅ 完成 | 姓名、聯絡方式、履歷摘要 |
 | 工作經歷 CRUD | ✅ 完成 | 公司、職位、描述、日期 |
 | 專案經驗管理 | ✅ 完成 | 關聯工作經歷的專案 |
+| 專案附件管理 | ✅ 完成 | 專案附件上傳與管理 |
 | 教育背景管理 | ✅ 完成 | 學校、學位、科系、日期 |
 | 證照管理 | ✅ 完成 | 證照名稱、發證機關、日期 |
 | 語言能力管理 | ✅ 完成 | 語言、熟練度、測驗成績 |
 | 學術著作管理 | ✅ 完成 | 論文、出版品、作者 |
 | GitHub專案管理 | ✅ 完成 | GitHub項目展示 |
-| 圖片上傳 | 🚧 開發中 | 履歷用圖片上傳功能 |
+| 資料匯入功能 | ✅ 完成 | 支援批量匯入履歷資料 |
 
 ## 快速開始 (Quick Start)
 
@@ -229,80 +230,93 @@ npm run dev
 ### 認證 (Authentication)
 | 端點 | 方法 | 功能 |
 |------|------|------|
-| `/api/v1/auth/login` | POST | 登入 |
-| `/api/v1/auth/logout` | POST | 登出 |
-| `/api/v1/auth/verify` | GET | 驗證 Token |
-| `/api/v1/auth/me` | GET | 獲取當前使用者資訊 |
+| `/api/auth/login` | POST | 登入 |
+| `/api/auth/logout` | POST | 登出 |
+| `/api/auth/verify` | GET | 驗證 Token |
+| `/api/auth/me` | GET | 獲取當前使用者資訊 |
 
 ### 個人資訊 (Personal Info)
 | 端點 | 方法 | 功能 |
 |------|------|------|
-| `/api/v1/personal-info/` | GET | 取得個人資訊 |
-| `/api/v1/personal-info/` | POST | 新增個人資訊 |
-| `/api/v1/personal-info/` | PUT | 更新個人資訊 |
+| `/api/personal-info/` | GET | 取得個人資訊 |
+| `/api/personal-info/` | POST | 新增個人資訊 |
+| `/api/personal-info/` | PUT | 更新個人資訊 |
 
 ### 工作經歷 (Work Experience)
 | 端點 | 方法 | 功能 |
 |------|------|------|
-| `/api/v1/work-experience/` | GET | 取得所有工作經歷 |
-| `/api/v1/work-experience/` | POST | 新增工作經歷 |
-| `/api/v1/work-experience/{id}` | GET | 取得特定工作經歷 |
-| `/api/v1/work-experience/{id}` | PUT | 更新工作經歷 |
-| `/api/v1/work-experience/{id}` | DELETE | 刪除工作經歷 |
+| `/api/work-experience/` | GET | 取得所有工作經歷 |
+| `/api/work-experience/` | POST | 新增工作經歷 |
+| `/api/work-experience/{id}` | GET | 取得特定工作經歷 |
+| `/api/work-experience/{id}` | PUT | 更新工作經歷 |
+| `/api/work-experience/{id}` | DELETE | 刪除工作經歷 |
 
 ### 專案 (Projects)
 | 端點 | 方法 | 功能 |
 |------|------|------|
-| `/api/v1/projects/` | GET | 取得所有專案 |
-| `/api/v1/projects/` | POST | 新增專案 |
-| `/api/v1/projects/{id}` | GET | 取得特定專案 |
-| `/api/v1/projects/{id}` | PUT | 更新專案 |
-| `/api/v1/projects/{id}` | DELETE | 刪除專案 |
+| `/api/projects/` | GET | 取得所有專案 |
+| `/api/projects/` | POST | 新增專案 |
+| `/api/projects/{id}` | GET | 取得特定專案 |
+| `/api/projects/{id}` | PUT | 更新專案 |
+| `/api/projects/{id}` | DELETE | 刪除專案 |
+| `/api/projects/{id}/attachments` | GET | 取得專案附件列表 |
+| `/api/projects/{id}/attachments` | POST | 上傳專案附件 |
+| `/api/projects/{id}/attachments/{attachment_id}` | DELETE | 刪除專案附件 |
 
 ### 教育背景 (Education)
 | 端點 | 方法 | 功能 |
 |------|------|------|
-| `/api/v1/education/` | GET | 取得所有教育背景 |
-| `/api/v1/education/` | POST | 新增教育背景 |
-| `/api/v1/education/{id}` | GET | 取得特定教育背景 |
-| `/api/v1/education/{id}` | PUT | 更新教育背景 |
-| `/api/v1/education/{id}` | DELETE | 刪除教育背景 |
+| `/api/education/` | GET | 取得所有教育背景 |
+| `/api/education/` | POST | 新增教育背景 |
+| `/api/education/{id}` | GET | 取得特定教育背景 |
+| `/api/education/{id}` | PUT | 更新教育背景 |
+| `/api/education/{id}` | DELETE | 刪除教育背景 |
 
 ### 證照 (Certifications)
 | 端點 | 方法 | 功能 |
 |------|------|------|
-| `/api/v1/certifications/` | GET | 取得所有證照 |
-| `/api/v1/certifications/` | POST | 新增證照 |
-| `/api/v1/certifications/{id}` | GET | 取得特定證照 |
-| `/api/v1/certifications/{id}` | PUT | 更新證照 |
-| `/api/v1/certifications/{id}` | DELETE | 刪除證照 |
+| `/api/certifications/` | GET | 取得所有證照 |
+| `/api/certifications/` | POST | 新增證照 |
+| `/api/certifications/{id}` | GET | 取得特定證照 |
+| `/api/certifications/{id}` | PUT | 更新證照 |
+| `/api/certifications/{id}` | DELETE | 刪除證照 |
 
 ### 語言能力 (Languages)
 | 端點 | 方法 | 功能 |
 |------|------|------|
-| `/api/v1/languages/` | GET | 取得所有語言能力 |
-| `/api/v1/languages/` | POST | 新增語言能力 |
-| `/api/v1/languages/{id}` | GET | 取得特定語言能力 |
-| `/api/v1/languages/{id}` | PUT | 更新語言能力 |
-| `/api/v1/languages/{id}` | DELETE | 刪除語言能力 |
+| `/api/languages/` | GET | 取得所有語言能力 |
+| `/api/languages/` | POST | 新增語言能力 |
+| `/api/languages/{id}` | GET | 取得特定語言能力 |
+| `/api/languages/{id}` | PUT | 更新語言能力 |
+| `/api/languages/{id}` | DELETE | 刪除語言能力 |
 
 ### 學術著作 (Publications)
 | 端點 | 方法 | 功能 |
 |------|------|------|
-| `/api/v1/publications/` | GET | 取得所有學術著作 |
-| `/api/v1/publications/` | POST | 新增學術著作 |
-| `/api/v1/publications/{id}` | GET | 取得特定學術著作 |
-| `/api/v1/publications/{id}` | PUT | 更新學術著作 |
-| `/api/v1/publications/{id}` | DELETE | 刪除學術著作 |
+| `/api/publications/` | GET | 取得所有學術著作 |
+| `/api/publications/` | POST | 新增學術著作 |
+| `/api/publications/{id}` | GET | 取得特定學術著作 |
+| `/api/publications/{id}` | PUT | 更新學術著作 |
+| `/api/publications/{id}` | DELETE | 刪除學術著作 |
 
 ### GitHub專案 (GitHub Projects)
 | 端點 | 方法 | 功能 |
 |------|------|------|
-| `/api/v1/github-projects/` | GET | 取得所有 GitHub 專案 |
-| `/api/v1/github-projects/` | POST | 新增 GitHub 專案 |
-| `/api/v1/github-projects/{id}` | GET | 取得特定 GitHub 專案 |
-| `/api/v1/github-projects/{id}` | PUT | 更新 GitHub 專案 |
-| `/api/v1/github-projects/{id}` | DELETE | 刪除 GitHub 專案 |
+| `/api/github-projects/` | GET | 取得所有 GitHub 專案 |
+| `/api/github-projects/` | POST | 新增 GitHub 專案 |
+| `/api/github-projects/{id}` | GET | 取得特定 GitHub 專案 |
+| `/api/github-projects/{id}` | PUT | 更新 GitHub 專案 |
+| `/api/github-projects/{id}` | DELETE | 刪除 GitHub 專案 |
+
+### 資料匯入 (Data Import)
+| 端點 | 方法 | 功能 |
+|------|------|------|
+| `/api/import/all` | POST | 批量匯入所有履歷資料 |
+| `/api/import/personal-info` | POST | 匯入個人資訊 |
+| `/api/import/work-experience` | POST | 匯入工作經歷 |
+| `/api/import/education` | POST | 匯入教育背景 |
+| `/api/import/certifications` | POST | 匯入證照資料 |
+| `/api/import/publications` | POST | 匯入學術著作 |
 
 ## 開發指南 (Development Guide)
 
@@ -339,25 +353,25 @@ npm run dev
 ```env
 # API 設定
 PROJECT_NAME="Resume Management System"
-API_V1_STR=/api/v1
+API_V1_STR=/api
 VERSION=1.0.0
 
 # 資料庫設定
 DATABASE_URL=sqlite:///./data/resume.db
 
-# JWT 設定
-SECRET_KEY=your-secret-key-change-this-in-production
+# JWT 設定 (請使用 python -c "import secrets; print(secrets.token_urlsafe(32))" 生成安全的 SECRET_KEY)
+SECRET_KEY=PLEASE-GENERATE-A-SECURE-SECRET-KEY-USING-PYTHON-SECRETS
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
 # CORS 設定
-BACKEND_CORS_ORIGINS=["http://localhost:58432","http://localhost:3000","http://localhost:8080","http://localhost"]
+BACKEND_CORS_ORIGINS=["http://localhost:5173","http://localhost:3000","http://localhost:58432"]
 ```
 
 ### Frontend (.env)
 ```env
-VITE_API_BASE_URL=http://localhost:8000/api/v1
-VITE_API_BASE_URL_DOCKER=http://localhost:58433/api/v1
+VITE_API_BASE_URL=http://localhost:8000/api
+VITE_API_BASE_URL_DOCKER=http://localhost:58433/api
 ```
 
 ## 部署 (Deployment)
@@ -468,6 +482,23 @@ docker-compose down
 - end_date: Date
 - technologies: String
 - tools: String
+- environment: String
+
+### 專案細節 (ProjectDetail)
+- id: Integer (Primary Key)
+- project_id: Integer (Foreign Key)
+- detail_zh: String
+- detail_en: String
+- display_order: Integer
+
+### 專案附件 (ProjectAttachment)
+- id: Integer (Primary Key)
+- project_id: Integer (Foreign Key)
+- file_name: String
+- file_path: String
+- file_type: String
+- file_size: Integer
+- uploaded_at: DateTime
 
 ### 教育背景 (Education)
 - id: Integer (Primary Key)
@@ -481,6 +512,51 @@ docker-compose down
 - end_date: Date
 - description_en: String
 - description_zh: String
+
+### 證照 (Certification)
+- id: Integer (Primary Key)
+- name_zh: String
+- name_en: String
+- issuer: String
+- issue_date: Date
+- certificate_number: String
+- display_order: Integer
+- created_at: DateTime
+- updated_at: DateTime
+
+### 語言能力 (Language)
+- id: Integer (Primary Key)
+- language_zh: String
+- language_en: String
+- proficiency_zh: String
+- proficiency_en: String
+- test_name: String
+- score: String
+- display_order: Integer
+- created_at: DateTime
+- updated_at: DateTime
+
+### 學術著作 (Publication)
+- id: Integer (Primary Key)
+- title: String
+- authors: String
+- publication: String
+- year: Integer
+- pages: String
+- display_order: Integer
+- created_at: DateTime
+- updated_at: DateTime
+
+### GitHub專案 (GithubProject)
+- id: Integer (Primary Key)
+- name_zh: String
+- name_en: String
+- description_zh: String
+- description_en: String
+- url: String
+- display_order: Integer
+- created_at: DateTime
+- updated_at: DateTime
 
 ## 環境配置 (Environment Setup)
 
@@ -611,5 +687,6 @@ Polo (林鴻全)
 ---
 
 **開發日期**: 2025年11月
+**最後更新**: 2025年11月30日
 **版本**: 1.0
 **狀態**: Production Ready
