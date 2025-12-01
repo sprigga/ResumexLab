@@ -596,15 +596,16 @@ async def import_resume_data():
 
 
 # 已新增於 2025-11-30，原因：新增資料庫匯出功能以方便遷移主機
+# 已修正於 2025-12-01，原因：修正路徑解析以正確定位資料庫檔案，與 config.py 中 DATABASE_URL 一致
 @router.get("/database/export/")
 async def export_database():
     """
     Export the SQLite database file for backup or migration
     """
     try:
-        # Get the database file path
+        # Get the database file path - 使用與 config.py 中 DATABASE_URL 相同的路徑結構 (data/resume.db)
         project_root = Path(__file__).parent.parent.parent.parent.parent.resolve()
-        db_path = project_root / "backend" / "resume.db"
+        db_path = project_root / "data" / "resume.db"
 
         # Verify the database file exists
         if not db_path.exists():
@@ -631,6 +632,7 @@ async def export_database():
 
 
 # 已新增於 2025-11-30，原因：新增資料庫匯入功能以方便遷移主機
+# 已修正於 2025-12-01，原因：修正路徑解析以正確定位資料庫檔案，與 config.py 中 DATABASE_URL 一致
 @router.post("/database/import/")
 async def import_database(file: UploadFile = File(...)):
     """
@@ -644,14 +646,17 @@ async def import_database(file: UploadFile = File(...)):
         )
 
     try:
-        # Get the database file path
+        # Get the database file path - 使用與 config.py 中 DATABASE_URL 相同的路徑結構 (data/resume.db)
         project_root = Path(__file__).parent.parent.parent.parent.parent.resolve()
-        db_path = project_root / "backend" / "resume.db"
+        db_path = project_root / "data" / "resume.db"
+
+        # 確保 data 目錄存在
+        db_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Create a backup of the current database if it exists
         if db_path.exists():
             backup_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            backup_path = project_root / "backend" / f"resume_backup_{backup_timestamp}.db"
+            backup_path = project_root / "data" / f"resume_backup_{backup_timestamp}.db"
             shutil.copy2(db_path, backup_path)
 
         # Save the uploaded database file

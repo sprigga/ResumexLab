@@ -5,10 +5,15 @@ Date: 2025-11-29
 """
 
 import sys
+import os
 from pathlib import Path
 
 # Add parent directory to path to import app modules
 sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
+
+# 確保在正確的目錄下執行，這樣相對路徑的資料庫才能被找到
+backend_dir = Path(__file__).parent.parent / "backend"
+os.chdir(backend_dir)
 
 from datetime import date
 from sqlalchemy.orm import Session

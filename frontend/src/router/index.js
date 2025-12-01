@@ -9,6 +9,12 @@ const routes = [
     meta: { requiresAuth: false },
   },
   {
+    path: '/test-api',
+    name: 'TestAPI',
+    component: () => import('@/components/APITestComponent.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
     path: '/admin/login',
     name: 'Login',
     component: () => import('@/views/admin/LoginView.vue'),
