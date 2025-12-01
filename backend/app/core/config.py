@@ -30,7 +30,13 @@ class Settings(BaseSettings):
     # 原本設定 (已註解於 2025-11-30，原因：新增實際前端運行端口 5175)
     # BACKEND_CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:3000"]
     # 新設定：包含所有可能的前端端口（已更新於 2025-11-30，原因：修正容器端口為 58432）
-    BACKEND_CORS_ORIGINS: list = ["http://localhost:5173", "http://localhost:5175", "http://localhost:3000", "http://localhost:58432"]
+    BACKEND_CORS_ORIGINS: list = ["http://localhost:5173", 
+                                  "http://localhost:5175", 
+                                  "http://localhost:3000", 
+                                  "http://localhost:58432",
+                                  "http://34.80.186.73:58432",  # Google Cloud 前端
+                                  "http://34.80.186.73"         # 如果使用其他端口
+                                  ]
 
     class Config:
         case_sensitive = True

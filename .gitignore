@@ -60,3 +60,6 @@ yarn-error.log*
 /dist
 /.nuxt
 /.next
+
+# Terminal Paste Image folder
+.cp-images/

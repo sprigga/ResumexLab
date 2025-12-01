@@ -10,18 +10,31 @@ WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1
 # Python 輸出不緩衝
 ENV PYTHONUNBUFFERED=1
+# 設定 pip 使用阿里雲鏡像加速 (適用於亞洲地區)
+# 修改日期: 2025-12-01
+# 說明: 加速 pip 套件下載,減少構建時間
+ENV PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple/
+ENV PIP_TRUSTED_HOST=mirrors.aliyun.com
 
 # 安裝系統依賴
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# 原版本: 僅安裝 gcc
+# 修改日期: 2025-12-01
+# 說明: 添加 curl 供 healthcheck 使用,優化 apt 鏡像源
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources && \
+    apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # 複製 requirements.txt
 COPY requirements.txt .
 
 # 安裝 Python 依賴
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# 原版本: 使用 --no-cache-dir
+# 修改日期: 2025-12-01
+# 說明: 移除 --no-cache-dir 以啟用緩存,使用鏡像源加速下載
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
 
 # 複製應用程式碼
 COPY . .
