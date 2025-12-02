@@ -38,12 +38,17 @@ a:hover {
   text-decoration: underline;
 }
 
+/* Updated on 2025-12-02 - Removed flex centering that causes layout issues */
+/* Reason: User requested full-width gradient background without white margins */
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
+  padding: 0;
+  /* Removed display: flex and place-items: center that causes centering issues */
+  /* display: flex; */
+  /* place-items: center; */
   min-width: 320px;
   min-height: 100vh;
+  width: 100%;
   /* Gradient background from black to deep blue to gray */
   background: linear-gradient(to bottom, #000000 0%, #1a2332 50%, #404040 100%);
   /* Vignette effect using box-shadow */
@@ -141,11 +146,17 @@ button:active {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+/* Updated on 2025-12-02 - Removed max-width constraint to allow full-width background */
+/* Reason: User requested full-width gradient background without white margins */
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  /* Removed max-width and centering that causes white margins */
+  /* max-width: 1280px; */
+  /* margin: 0 auto; */
+  /* padding: 2rem; */
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  /* text-align: center; */
   position: relative;
   z-index: 1;
 }

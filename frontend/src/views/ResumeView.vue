@@ -307,10 +307,13 @@ const toggleShowAllGithubProjects = () => {
 /* Reason: Ensuring resume-container background matches style.css global background */
 /* Updated on 2025-11-30 - Changed max-width from 900px to 1200px */
 /* Reason: User requested wider layout to accommodate full publication titles */
+/* Updated on 2025-12-02 - Changed to full-width background with centered content */
+/* Reason: User requested background to fill entire viewport dynamically across all screen sizes */
 .resume-container {
-  max-width: 950px;
-  margin: 0 auto;
-  padding: 20px;
+  /* Removed max-width constraint to allow full-width background */
+  width: 100%;
+  margin: 0;
+  padding: 0;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
@@ -323,6 +326,17 @@ const toggleShowAllGithubProjects = () => {
   background: linear-gradient(to bottom, #000000 0%, #1a2332 50%, #404040 100%) !important;
   color: rgba(255, 255, 255, 0.87);
   position: relative;
+}
+
+/* Updated on 2025-12-02 - Added inner wrapper for content centering */
+/* Reason: Keep content centered while background fills entire viewport */
+.resume-container > .language-switcher,
+.resume-container > .resume-card {
+  max-width: 950px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 20px;
+  padding-right: 20px;
 }
 
 /* Vignette effect - subtle inner shadow */
@@ -346,9 +360,12 @@ const toggleShowAllGithubProjects = () => {
 
 /* Language switcher styling - Updated on 2025-11-29 */
 /* Reason: Ensure button is visible on dark gradient background */
+/* Updated on 2025-12-02 - Added padding-top to match card spacing */
+/* Reason: Ensure proper vertical spacing for language switcher */
 .language-switcher {
   text-align: right;
   margin-bottom: 20px;
+  padding-top: 20px;
 }
 
 .language-switcher :deep(.el-button) {
@@ -372,9 +389,12 @@ const toggleShowAllGithubProjects = () => {
 
   /* New background matching the gradient - Updated on 2025-11-29 */
   /* Reason: Ensuring card background matches the overall gradient background */
+  /* Updated on 2025-12-02 - Added bottom margin for spacing */
+  /* Reason: Ensure proper spacing at bottom of page */
   background: linear-gradient(to bottom, #000000 0%, #1a2332 50%, #404040 100%) !important;
   color: rgba(255, 255, 255, 0.87) !important;
   border: none !important;
+  margin-bottom: 20px;
 }
 
 .section {
