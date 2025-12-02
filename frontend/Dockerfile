@@ -16,6 +16,9 @@ RUN npm ci
 # 複製應用程式碼
 COPY . .
 
+# 增加 Node.js 記憶體限制並構建應用
+RUN NODE_OPTIONS="--max-old-space-size=1024" npm run build
+
 # 構建應用
 RUN npm run build
 

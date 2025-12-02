@@ -60,8 +60,8 @@ services:
       # 原設定: "80:80" - 改為冷門端口避免衝突與安全風險
       # 修改日期: 2025-11-29
       - "58432:80"
-    depends_on:
-      - backend
+    # depends_on:
+      # - backend
     networks:
       - resumexlab-network
     healthcheck:
