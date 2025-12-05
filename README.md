@@ -11,7 +11,8 @@ A full-stack resume management system with Vue 3 frontend and FastAPI backend, f
 - RESTful API
 - SQLite 資料庫
 - Docker 容器化部署
-- 完整的履歷內容管理 (工作經歷、專案、教育背景、證照、語言能力、學術著作、GitHub專案)
+- 完整的履歷內容管理 (個人資訊、工作經歷、專案、教育背景、證照、語言能力、學術著作、GitHub專案)
+- 批量資料匯入功能
 
 This is a full-stack resume management system that provides:
 - Public resume display page
@@ -20,7 +21,8 @@ This is a full-stack resume management system that provides:
 - RESTful API
 - SQLite database
 - Docker containerization
-- Complete resume content management (work experience, projects, education, certifications, languages, publications, GitHub projects)
+- Complete resume content management (personal info, work experience, projects, education, certifications, languages, publications, GitHub projects)
+- Batch data import functionality
 
 ## 系統架構 (System Architecture)
 
@@ -36,11 +38,12 @@ This is a full-stack resume management system that provides:
 │  │ - ResumeView           │   │   │ - /api/auth         │  │
 │  │ - AdminView            │   │   │ - /api/personal-info│  │
 │  │ - Dashboard            │   │   │ - /api/work-exp     │  │
-│  │ - ProjectView          │   │   │ - /api/education    │  │
-│  │                        │   │   │ - /api/projects     │  │
-│  │ - CertificationView    │   │   │ - /api/languages    │  │
-│  │ - EducationView        │   │   │ - /api/publications │  │
-│  │ - LanguageView         │   │   │ - /api/github-projects││
+│  │ - PersonalInfoEdit     │   │   │ - /api/education    │  │
+│  │ - ProjectEdit          │   │   │ - /api/projects     │  │
+│  │ - CertificationEdit    │   │   │ - /api/certifications│  │
+│  │ - PublicationEdit      │   │   │ - /api/publications │  │
+│  │ - ImportDataView       │   │   │ - /api/github-projects││
+│  │                        │   │   │ - /api/import       │  │
 │  └─────────────────────────┘   │   └─────────────────────┘  │
 │                                │                            │
 │  State: Pinia                  │   Database: SQLite         │
@@ -67,6 +70,7 @@ This is a full-stack resume management system that provides:
 | Vue I18n | 9.14.5 | 多語言支援 |
 | Axios | 1.13.2 | HTTP 客戶端 |
 | Vite | 7.2.4 | 建置工具 |
+| Nginx | latest | 生產環境 Web 伺服器 |
 
 ### Backend
 | 技術 | 版本 | 說明 |
@@ -74,11 +78,14 @@ This is a full-stack resume management system that provides:
 | FastAPI | 0.104.1 | Web 框架 |
 | SQLAlchemy | 2.0.23 | ORM |
 | SQLite | 3.x | 資料庫 |
-| JWT | python-jose | 身份驗證 |
+| python-jose | 3.3.0 | JWT 身份驗證 |
+| passlib[bcrypt] | 1.7.4 | 密碼加密 |
 | Pydantic | 2.5.0 | 資料驗證 |
+| Pydantic Settings | 2.1.0 | 配置管理 |
 | Uvicorn | 0.24.0 | ASGI 伺服器 |
 | Alembic | 1.12.1 | 資料庫遷移 |
 | Python | 3.10+ | 程式語言 |
+| PyPDF2 | 3.0.1 | PDF 處理 |
 
 ## 專案結構 (Project Structure)
 
@@ -96,37 +103,71 @@ resumexlab/
 │   │   │       ├── certifications.py  # 證照
 │   │   │       ├── languages.py  # 語言能力
 │   │   │       ├── publications.py # 學術著作
-│   │   │       └── github_projects.py # GitHub專案
+│   │   │       ├── github_projects.py # GitHub專案
+│   │   │       └── import_data.py # 資料匯入
 │   │   ├── core/               # 核心配置
+│   │   │   ├── config.py       # 應用配置
+│   │   │   └── security.py     # 安全相關
 │   │   ├── crud/               # CRUD 操作
 │   │   ├── db/                 # 資料庫設定
+│   │   │   └── session.py      # 資料庫會話
 │   │   ├── models/             # 資料庫模型
+│   │   │   ├── user.py         # 使用者模型
+│   │   │   ├── personal_info.py # 個人資訊模型
+│   │   │   ├── work_experience.py # 工作經驗模型
+│   │   │   ├── project.py      # 專案模型
+│   │   │   ├── education.py    # 教育背景模型
+│   │   │   ├── certification.py # 證照模型
+│   │   │   └── publication.py  # 學術著作模型
 │   │   ├── schemas/            # Pydantic schemas
 │   │   └── main.py             # 主應用程式
+│   ├── data/                   # 資料庫檔案目錄
+│   │   └── resume.db           # SQLite 資料庫
 │   ├── requirements.txt
 │   ├── Dockerfile
 │   ├── run.py
-│   └── README.md
+│   └── .env.example           # 環境變數範例
 │
 ├── frontend/                   # Vue 3 前端
 │   ├── src/
 │   │   ├── api/               # API 服務
 │   │   ├── assets/            # 靜態資源
 │   │   ├── components/        # 元件
+│   │   │   └── APITestComponent.vue  # API 測試元件
 │   │   ├── css/               # 樣式
 │   │   ├── locales/           # 多語言
+│   │   │   ├── en.js         # 英文翻譯
+│   │   │   └── zh.js         # 中文翻譯
 │   │   ├── router/            # 路由
+│   │   │   └── index.js      # 路由配置
 │   │   ├── stores/            # 狀態管理
+│   │   │   └── auth.js       # 認證狀態
 │   │   ├── utils/             # 工具函數
 │   │   └── views/             # 頁面
+│   │       ├── ResumeView.vue  # 履歷展示頁面
+│   │       └── admin/         # 管理頁面
+│   │           ├── AdminLayout.vue  # 管理介面布局
+│   │           ├── LoginView.vue    # 登入頁面
+│   │           ├── DashboardView.vue # 儀表板
+│   │           ├── PersonalInfoEdit.vue # 個人資訊編輯
+│   │           ├── WorkExperienceEdit.vue # 工作經歷編輯
+│   │           ├── ProjectEdit.vue      # 專案編輯
+│   │           ├── EducationEdit.vue    # 教育背景編輯
+│   │           ├── CertificationEdit.vue # 證照編輯
+│   │           ├── PublicationEdit.vue  # 學術著作編輯
+│   │           ├── GithubProjectEdit.vue # GitHub專案編輯
+│   │           └── ImportDataView.vue   # 資料匯入
 │   ├── public/                # 靜態資源
 │   ├── package.json
 │   ├── vite.config.js
 │   ├── Dockerfile
 │   └── nginx.conf
 │
+├── script/                    # 工具腳本
+│   └── create_database.py    # 資料庫初始化腳本
 ├── docker-compose.yml         # Docker 容器化配置
 ├── README.md                  # 本檔案
+├── CLAUDE.md                  # Claude Code 專案指引
 └── .env.example              # 環境變數範例
 ```
 
@@ -721,6 +762,30 @@ Polo (林鴻全)
 ---
 
 **開發日期**: 2025年11月
-**最後更新**: 2025年11月30日
+**最後更新**: 2025年12月5日
 **版本**: 1.0
 **狀態**: Production Ready
+
+## 重要提示 (Important Notes)
+
+### 端口配置
+- **開發環境**:
+  - 前端: http://localhost:5173 (Vite dev server)
+  - 後端: http://localhost:8000 (Uvicorn)
+
+- **Docker 生產環境**:
+  - 前端: http://localhost:58432 (Nginx)
+  - 後端: http://localhost:58433 (Uvicorn)
+
+### 資料庫位置
+- 資料庫檔案位於: `backend/data/resume.db`
+- 首次運行需執行: `python script/create_database.py` 初始化資料庫
+
+### 環境變數
+- 後端環境變數請參考 `backend/.env.example`
+- **重要**: 生產環境務必更改 `SECRET_KEY`
+- 使用 `python -c "import secrets; print(secrets.token_urlsafe(32))"` 生成安全密鑰
+
+### 預設登入帳號
+- 使用 `create_database.py` 建立的預設帳號請查看腳本內容
+- 建議首次登入後立即更改密碼
