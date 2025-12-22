@@ -82,6 +82,13 @@ class ProjectBase(BaseModel):
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     display_order: int = 0
+    # New attachment fields - added on 2025-12-22
+    # Reason: Support file attachment functionality similar to work experience
+    attachment_name: Optional[str] = None
+    attachment_path: Optional[str] = None
+    attachment_size: Optional[int] = None
+    attachment_type: Optional[str] = None
+    attachment_url: Optional[str] = None
 
 
 class ProjectCreate(ProjectBase):

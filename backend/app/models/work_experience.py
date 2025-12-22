@@ -21,6 +21,16 @@ class WorkExperience(Base):
     description_zh = Column(Text)
     description_en = Column(Text)
     display_order = Column(Integer, default=0)
+    # Original attachment field - commented out on 2025-12-22
+    # Reason: Replacing with more comprehensive attachment fields
+    # attachment_url = Column(String(500))
+    # New attachment fields - added on 2025-12-22
+    # Reason: Support multiple attachment types and metadata
+    attachment_name = Column(String(255))
+    attachment_path = Column(String(500))
+    attachment_size = Column(Integer)
+    attachment_type = Column(String(100))
+    attachment_url = Column(String(500))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

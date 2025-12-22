@@ -20,7 +20,19 @@ const formData = ref({
   description_zh: '',
   description_en: '',
   display_order: 0,
+  // New attachment fields - added on 2025-12-22
+  // Reason: Support file attachment functionality
+  attachment_name: '',
+  attachment_path: '',
+  attachment_size: 0,
+  attachment_type: '',
+  attachment_url: '',
 })
+// File upload state - added on 2025-12-22
+// Reason: Track file upload status and data
+const selectedFile = ref(null)
+const fileUploading = ref(false)
+const uploadRef = ref(null)
 
 onMounted(async () => {
   await loadWorkExperiences()
@@ -51,6 +63,18 @@ const resetForm = () => {
     description_zh: '',
     description_en: '',
     display_order: 0,
+    // Reset attachment fields - added on 2025-12-22
+    attachment_name: '',
+    attachment_path: '',
+    attachment_size: 0,
+    attachment_type: '',
+    attachment_url: '',
+  }
+  // Reset file upload state - added on 2025-12-22
+  selectedFile.value = null
+  // Reset upload component - added on 2025-12-22
+  if (uploadRef.value) {
+    uploadRef.value.clearFiles()
   }
 }
 
@@ -66,6 +90,77 @@ const handleEdit = (row) => {
   dialogVisible.value = true
 }
 
+// File upload handler - modified on 2025-12-22
+// Reason: Handle file selection and validation with better state management
+const handleFileChange = (uploadFile, uploadFiles) => {
+  const file = uploadFile.raw
+  if (file) {
+    // Validate file size (10MB limit)
+    const maxSize = 10 * 1024 * 1024
+    if (file.size > maxSize) {
+      ElMessage.error('File size must be less than 10MB')
+      // Clear the upload
+      if (uploadRef.value) {
+        uploadRef.value.clearFiles()
+      }
+      return false
+    }
+
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain', 'image/jpeg', 'image/jpg', 'image/png']
+    const allowedExtensions = ['.pdf', '.doc', '.docx', '.txt', '.jpg', '.jpeg', '.png']
+    const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'))
+
+    if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+      ElMessage.error('Invalid file type. Allowed types: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG')
+      // Clear the upload
+      if (uploadRef.value) {
+        uploadRef.value.clearFiles()
+      }
+      return false
+    }
+
+    selectedFile.value = file
+    formData.value.attachment_name = file.name
+    formData.value.attachment_size = file.size
+    formData.value.attachment_type = file.type
+    return true
+  }
+  return false
+}
+
+// Remove current attachment - added on 2025-12-22
+// Reason: Handle removal of existing attachment in edit mode
+const removeCurrentAttachment = () => {
+  formData.value.attachment_name = ''
+  formData.value.attachment_path = ''
+  formData.value.attachment_size = 0
+  formData.value.attachment_type = ''
+  formData.value.attachment_url = ''
+}
+
+// Remove selected file - added on 2025-12-22
+// Reason: Handle removal of newly selected file
+const removeSelectedFile = () => {
+  selectedFile.value = null
+  if (uploadRef.value) {
+    uploadRef.value.clearFiles()
+  }
+}
+
+// Handle dialog close - added on 2025-12-22
+// Reason: Reset upload state when dialog closes
+const handleDialogClose = () => {
+  // Reset file selection when dialog closes
+  selectedFile.value = null
+  if (uploadRef.value) {
+    uploadRef.value.clearFiles()
+  }
+}
+
+// Original save method - commented out on 2025-12-22
+// Reason: Replaced with new save method that supports file upload
+/*
 const handleSave = async () => {
   loading.value = true
   try {
@@ -83,6 +178,121 @@ const handleSave = async () => {
   } finally {
     loading.value = false
   }
+}
+*/
+
+// Updated save method with file upload support for both create and edit - modified on 2025-12-22
+// Reason: Handle file upload for both creating and updating work experience
+const handleSave = async () => {
+  loading.value = true
+  fileUploading.value = true
+
+  try {
+    if (isEditing.value) {
+      // For editing, check if a new file is selected
+      if (selectedFile.value) {
+        await updateWorkExperienceWithFile()
+      } else {
+        await resumeStore.updateWorkExperience(formData.value.id, formData.value)
+      }
+      ElMessage.success('Work experience updated successfully')
+    } else {
+      // For creating, use the file upload API if a file is selected
+      if (selectedFile.value) {
+        await createWorkExperienceWithFile()
+      } else {
+        await resumeStore.createWorkExperience(formData.value)
+      }
+      ElMessage.success('Work experience created successfully')
+    }
+    dialogVisible.value = false
+    await loadWorkExperiences()
+    // Reset upload component after successful save - added on 2025-12-22
+    if (uploadRef.value) {
+      uploadRef.value.clearFiles()
+    }
+  } catch (error) {
+    ElMessage.error('Failed to save work experience')
+  } finally {
+    loading.value = false
+    fileUploading.value = false
+  }
+}
+
+// Create work experience with file - added on 2025-12-22
+// Reason: Handle file upload API call
+// Fixed on 2025-12-22: Include all form fields even if empty, as backend expects them
+const createWorkExperienceWithFile = async () => {
+  const formDataToSend = new FormData()
+
+  // Add form fields - include all fields even if empty/null, as backend expects them
+  Object.keys(formData.value).forEach(key => {
+    if (key !== 'attachment_url' && key !== 'id') {  // Exclude attachment_url and id from form data
+      const value = formData.value[key]
+      // Convert undefined/null to empty string for form data
+      formDataToSend.append(key, value !== null && value !== undefined ? value : '')
+    }
+  })
+
+  // Add file
+  if (selectedFile.value) {
+    formDataToSend.append('file', selectedFile.value)
+  }
+
+  const token = localStorage.getItem('token')
+  const response = await fetch('/api/work-experience/upload', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
+    body: formDataToSend
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Upload failed')
+  }
+
+  return response.json()
+}
+
+// Update work experience with file - added on 2025-12-22
+// Reason: Handle file upload for updates
+// Fixed on 2025-12-22: Include all form fields even if empty, as backend expects them
+const updateWorkExperienceWithFile = async () => {
+  const formDataToSend = new FormData()
+
+  // Add form fields - include all fields even if empty/null, as backend expects them
+  Object.keys(formData.value).forEach(key => {
+    if (key !== 'attachment_url' && key !== 'id') {  // Exclude attachment_url and id from form data
+      const value = formData.value[key]
+      // Convert undefined/null to empty string for form data
+      formDataToSend.append(key, value !== null && value !== undefined ? value : '')
+    }
+  })
+
+  // Add file
+  if (selectedFile.value) {
+    formDataToSend.append('file', selectedFile.value)
+  }
+
+  // Note: Don't append id to FormData as it should be in URL path parameter
+
+  const token = localStorage.getItem('token')
+  const response = await fetch(`/api/work-experience/${formData.value.id}/upload`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`
+    },
+    body: formDataToSend
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.detail || 'Upload failed')
+  }
+
+  return response.json()
 }
 
 const handleDelete = async (id) => {
@@ -109,6 +319,42 @@ const handleDelete = async (id) => {
     loading.value = false
   }
 }
+
+// Handle file download - modified on 2025-12-22
+// Reason: Simplified with proper proxy configuration and improved error handling
+const handleDownload = async (url, fileName) => {
+  try {
+    // Use the URL directly - proxy will handle the routing to backend
+    // Modified on 2025-12-22: Removed manual URL construction since Vite proxy handles /uploads
+    const response = await fetch(url)
+    if (!response.ok) {
+      if (response.status === 404) {
+        ElMessage.error('File not found on server. The file may have been deleted.')
+        // Reload work experiences to update UI with latest data
+        await loadWorkExperiences()
+      } else {
+        ElMessage.error(`Failed to download file: ${response.status} ${response.statusText}`)
+      }
+      return
+    }
+
+    // Download the file
+    const blob = await response.blob()
+    const downloadUrl = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = downloadUrl
+    a.download = fileName || 'download'
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(downloadUrl)
+    document.body.removeChild(a)
+
+    ElMessage.success('File downloaded successfully')
+  } catch (error) {
+    console.error('Download error:', error)
+    ElMessage.error('Failed to download file: ' + error.message)
+  }
+}
 </script>
 
 <template>
@@ -128,6 +374,35 @@ const handleDelete = async (id) => {
           </template>
         </el-table-column>
         <el-table-column prop="location_en" label="Location" width="150" />
+        <!-- Attachment column - added on 2025-12-22 -->
+        <!-- Reason: Display attachment information in table -->
+        <el-table-column label="Attachment" width="150">
+          <template #default="{ row }">
+            <div v-if="row.attachment_name">
+              <el-tooltip :content="row.attachment_name" placement="top">
+                <el-button
+                  v-if="row.attachment_url"
+                  size="small"
+                  type="primary"
+                  link
+                  @click="handleDownload(row.attachment_url, row.attachment_name)"
+                >
+                  <el-icon><Document /></el-icon>
+                  <span style="margin-left: 5px">{{ row.attachment_name.substring(0, 15) }}...</span>
+                </el-button>
+                <span v-else style="color: #999;">
+                  <el-icon><Document /></el-icon>
+                  <span style="margin-left: 5px">{{ row.attachment_name.substring(0, 15) }}...</span>
+                  <span style="margin-left: 5px; font-size: 12px;">(File missing)</span>
+                </span>
+              </el-tooltip>
+              <div style="font-size: 12px; color: #999;">
+                {{ row.attachment_size ? (row.attachment_size / 1024).toFixed(1) + 'KB' : 'Size unknown' }}
+              </div>
+            </div>
+            <span v-else style="color: #ccc;">No attachment</span>
+          </template>
+        </el-table-column>
         <el-table-column label="Actions" width="150">
           <template #default="{ row }">
             <el-button size="small" @click="handleEdit(row)">Edit</el-button>
@@ -144,6 +419,7 @@ const handleDelete = async (id) => {
       v-model="dialogVisible"
       :title="isEditing ? 'Edit Work Experience' : 'Add Work Experience'"
       width="80%"
+      @close="handleDialogClose"
     >
       <el-form :model="formData" label-width="150px" label-position="top">
         <el-row :gutter="20">
@@ -226,11 +502,89 @@ const handleDelete = async (id) => {
             </el-form-item>
           </el-col>
         </el-row>
+
+        <!-- File upload section - added on 2025-12-22 -->
+        <!-- Reason: Allow users to attach files to work experience -->
+        <!-- Updated on 2025-12-22: Enable file upload for both create and edit modes -->
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="Attachment">
+              <!-- Show upload component for both create and edit modes -->
+              <div>
+                <el-upload
+                  ref="uploadRef"
+                  :auto-upload="false"
+                  :show-file-list="false"
+                  :on-change="handleFileChange"
+                  :limit="1"
+                  accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
+                >
+                  <el-button type="primary">{{ isEditing ? 'Change File' : 'Select File' }}</el-button>
+                  <template #tip>
+                    <div class="el-upload__tip">
+                      Supported formats: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG (Max 10MB)
+                    </div>
+                  </template>
+                </el-upload>
+
+                <!-- Show current attachment info for edit mode -->
+                <div v-if="isEditing && formData.attachment_name && !selectedFile" style="margin-top: 10px; padding: 10px; background-color: #f9f9f9; border-radius: 4px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                      <el-icon><Document /></el-icon>
+                      <span style="margin-left: 8px;">{{ formData.attachment_name }}</span>
+                      <span v-if="formData.attachment_size" style="margin-left: 10px; color: #999;">
+                        ({{ (formData.attachment_size / 1024).toFixed(1) }}KB)
+                      </span>
+                      <el-button
+                        v-if="formData.attachment_url"
+                        size="small"
+                        type="primary"
+                        @click="handleDownload(formData.attachment_url, formData.attachment_name)"
+                        style="margin-left: 10px;"
+                      >
+                        <el-icon><Download /></el-icon>
+                        Download
+                      </el-button>
+                      <span v-else style="margin-left: 10px; color: #ff6b6b; font-size: 12px;">
+                        (File missing)
+                      </span>
+                    </div>
+                    <el-button size="small" type="danger" @click="removeCurrentAttachment">
+                      Remove Current
+                    </el-button>
+                  </div>
+                </div>
+
+                <!-- Show selected file info -->
+                <div v-if="selectedFile" style="margin-top: 10px; padding: 10px; background-color: #f5f5f5; border-radius: 4px;">
+                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <div>
+                      <el-icon><Document /></el-icon>
+                      <span style="margin-left: 8px;">{{ selectedFile.name }}</span>
+                      <span style="margin-left: 10px; color: #999;">({{ (selectedFile.size / 1024).toFixed(1) }}KB)</span>
+                    </div>
+                    <el-button size="small" type="danger" @click="removeSelectedFile">
+                      Remove New
+                    </el-button>
+                  </div>
+                </div>
+
+                <!-- Show no attachment message for create mode -->
+                <div v-if="!isEditing && !formData.attachment_name && !selectedFile" style="margin-top: 10px; padding: 10px; background-color: #f9f9f9; border-radius: 4px; color: #999;">
+                  No attachment selected
+                </div>
+              </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
       </el-form>
 
       <template #footer>
         <el-button @click="dialogVisible = false">Cancel</el-button>
-        <el-button type="primary" @click="handleSave" :loading="loading">Save</el-button>
+        <el-button type="primary" @click="handleSave" :loading="loading || fileUploading">
+          {{ fileUploading ? 'Uploading...' : 'Save' }}
+        </el-button>
       </template>
     </el-dialog>
   </div>

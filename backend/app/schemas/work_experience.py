@@ -17,6 +17,13 @@ class WorkExperienceBase(BaseModel):
     description_zh: Optional[str] = None
     description_en: Optional[str] = None
     display_order: int = 0
+    # New attachment fields - added on 2025-12-22
+    # Reason: Support file attachment functionality
+    attachment_name: Optional[str] = None
+    attachment_path: Optional[str] = None
+    attachment_size: Optional[int] = None
+    attachment_type: Optional[str] = None
+    attachment_url: Optional[str] = None
 
 
 class WorkExperienceCreate(WorkExperienceBase):

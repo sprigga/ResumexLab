@@ -20,6 +20,13 @@ class Project(Base):
     start_date = Column(Date, nullable=True)
     end_date = Column(Date, nullable=True)
     display_order = Column(Integer, default=0)
+    # New attachment fields - added on 2025-12-22
+    # Reason: Support file attachment functionality similar to work experience
+    attachment_name = Column(String(255))
+    attachment_path = Column(String(500))
+    attachment_size = Column(Integer)
+    attachment_type = Column(String(100))
+    attachment_url = Column(String(500))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 

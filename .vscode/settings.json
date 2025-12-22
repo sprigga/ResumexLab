@@ -1,1 +1,34 @@
-{}
+{
+    "terminal.integrated.fontSize": 15,
+    "workbench.editor.defaultBinaryEditor": "markdown-preview-enhanced",
+    "claudeCodeChat.wsl.claudePath": "/home/ubuntu/.local/bin/claude-code",
+    "claudeCodeChat.wsl.nodePath": "/home/linuxbrew/.linuxbrew/bin/node",
+    "claudeCodeChat.wsl.enabled": true,
+    "claudeCodeChat.wsl.distro": "Ubuntu",
+    "material-icon-theme.files.customClones": [
+
+
+    ],
+    "material-icon-theme.folders.customClones": [
+
+    ],
+    "editor.tabSize": 15,
+    "gemini-cli-vscode.magusCouncil.defaultAgents": [
+        "gemini",
+        "codex",
+        "claude",
+        "qwen"
+    ],
+    "markdown-preview-enhanced.plantumlServer": "https://www.plantuml.com/plantuml/svg/",
+    "claudeCode.useTerminal": true,
+    "claudeCode.useCtrlEnterToSend": true,
+    "chat.useClaudeSkills": true,
+    "inlineChat.enableV2": true,
+    "claudeCode.environmentVariables": [
+        
+
+
+        
+
+    ]
+}
