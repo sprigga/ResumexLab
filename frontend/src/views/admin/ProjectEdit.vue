@@ -3,6 +3,11 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useResumeStore } from '@/stores/resume'
 
+// Import Quill Editor - added on 2025-12-30
+// Reason: Enable rich text editing for project descriptions
+import { QuillEditor } from '@vueup/vue-quill'
+import '@vueup/vue-quill/dist/vue-quill.snow.css'
+
 const resumeStore = useResumeStore()
 const loading = ref(false)
 const dialogVisible = ref(false)
@@ -430,12 +435,60 @@ const handleDownload = async (url, fileName) => {
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="Description (Chinese)">
-              <el-input v-model="formData.description_zh" type="textarea" :rows="5" />
+              <!-- Original textarea implementation - commented out on 2025-12-30 -->
+              <!-- Reason: Replaced with rich text editor for better formatting support -->
+              <!-- <el-input v-model="formData.description_zh" type="textarea" :rows="5" /> -->
+
+              <!-- New rich text editor implementation - added on 2025-12-30 -->
+              <!-- Reason: Enable HTML content editing with formatting options -->
+              <quill-editor
+                v-model:content="formData.description_zh"
+                content-type="html"
+                theme="snow"
+                :toolbar="[
+                  ['bold', 'italic', 'underline', 'strike'],
+                  ['blockquote', 'code-block'],
+                  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                  [{ 'indent': '-1'}, { 'indent': '+1' }],
+                  [{ 'size': ['small', false, 'large', 'huge'] }],
+                  [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                  [{ 'color': [] }, { 'background': [] }],
+                  [{ 'align': [] }],
+                  ['link'],
+                  ['clean']
+                ]"
+                style="height: 200px;"
+                :style="{ marginBottom: '50px' }"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="Description (English)">
-              <el-input v-model="formData.description_en" type="textarea" :rows="5" />
+              <!-- Original textarea implementation - commented out on 2025-12-30 -->
+              <!-- Reason: Replaced with rich text editor for better formatting support -->
+              <!-- <el-input v-model="formData.description_en" type="textarea" :rows="5" /> -->
+
+              <!-- New rich text editor implementation - added on 2025-12-30 -->
+              <!-- Reason: Enable HTML content editing with formatting options -->
+              <quill-editor
+                v-model:content="formData.description_en"
+                content-type="html"
+                theme="snow"
+                :toolbar="[
+                  ['bold', 'italic', 'underline', 'strike'],
+                  ['blockquote', 'code-block'],
+                  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                  [{ 'indent': '-1'}, { 'indent': '+1' }],
+                  [{ 'size': ['small', false, 'large', 'huge'] }],
+                  [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+                  [{ 'color': [] }, { 'background': [] }],
+                  [{ 'align': [] }],
+                  ['link'],
+                  ['clean']
+                ]"
+                style="height: 200px;"
+                :style="{ marginBottom: '50px' }"
+              />
             </el-form-item>
           </el-col>
         </el-row>

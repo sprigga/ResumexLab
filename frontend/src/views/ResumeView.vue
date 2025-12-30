@@ -3,6 +3,10 @@ import { ref, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useResumeStore } from '@/stores/resume'
 
+// Import DOMPurify for HTML sanitization - added on 2025-12-30
+// Reason: Prevent XSS attacks when rendering HTML content
+import DOMPurify from 'dompurify'
+
 const { t, locale } = useI18n()
 const resumeStore = useResumeStore()
 
@@ -56,6 +60,17 @@ const getField = (obj, fieldPrefix) => {
   return obj[fieldPrefix + suffix] || obj[fieldPrefix] || ''
 }
 
+// Sanitize HTML to prevent XSS attacks - added on 2025-12-30
+// Reason: Allow safe HTML rendering in descriptions
+const sanitizeHtml = (html) => {
+  if (!html) return ''
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 's', 'ul', 'ol', 'li', 'blockquote', 'code', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'a', 'span', 'div'],
+    ALLOWED_ATTR: ['href', 'class', 'style', 'target'],
+    ALLOWED_URI_REGEXP: /^(?:(?:(?:f|ht)tps?|mailto|tel|callto|sms|cid|xmpp|data):|[^a-z]|[a-z+.\-]+(?:[^a-z+.\-:]|$))/i
+  })
+}
+
 // Modified on 2025-11-30: Added function to get visible projects (first 5 or all)
 // Reason: Support collapsing projects beyond the first 5
 const getVisibleProjects = (expId, projects) => {
@@ -88,6 +103,16 @@ const getVisibleGithubProjects = (projects) => {
 // Reason: Support collapsing/expanding GitHub projects
 const toggleShowAllGithubProjects = () => {
   showAllGithubProjects.value = !showAllGithubProjects.value
+}
+
+// Format file size - Added on 2025-12-30
+// Reason: Convert file size from bytes to human readable format
+const formatFileSize = (bytes) => {
+  if (!bytes || bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i]
 }
 </script>
 
@@ -152,9 +177,15 @@ const toggleShowAllGithubProjects = () => {
               <p class="location">{{ getField(exp, 'location') }}</p>
             </div>
           </div>
-          <p v-if="getField(exp, 'description')" class="description">
+          <!-- Original implementation - commented out on 2025-12-30 -->
+          <!-- Reason: Replaced with HTML rendering support -->
+          <!-- <p v-if="getField(exp, 'description')" class="description">
             {{ getField(exp, 'description') }}
-          </p>
+          </p> -->
+
+          <!-- New implementation with HTML rendering and sanitization - added on 2025-12-30 -->
+          <!-- Reason: Render formatted descriptions safely -->
+          <div v-if="getField(exp, 'description')" class="description" v-html="sanitizeHtml(getField(exp, 'description'))"></div>
 
           <!-- Projects under this work experience -->
           <!-- Modified on 2025-11-30: Display only first 5 projects, with expand/collapse button -->
@@ -167,12 +198,30 @@ const toggleShowAllGithubProjects = () => {
                   {{ project.start_date || 'N/A' }} - {{ project.end_date || 'Present' }}
                 </p>
               </div>
-              <p v-if="getField(project, 'description')" class="project-description">
+              <!-- Original implementation - commented out on 2025-12-30 -->
+              <!-- Reason: Replaced with HTML rendering support -->
+              <!-- <p v-if="getField(project, 'description')" class="project-description">
                 {{ getField(project, 'description') }}
-              </p>
+              </p> -->
+
+              <!-- New implementation with HTML rendering and sanitization - added on 2025-12-30 -->
+              <!-- Reason: Render formatted project descriptions safely -->
+              <div v-if="getField(project, 'description')" class="project-description" v-html="sanitizeHtml(getField(project, 'description'))"></div>
               <div v-if="project.technologies || project.tools" class="project-tech">
                 <span v-if="project.technologies"><strong>Technologies:</strong> {{ project.technologies }}</span>
                 <span v-if="project.tools"><strong>Tools:</strong> {{ project.tools }}</span>
+              </div>
+
+              <!-- Project attachment - Added on 2025-12-30 -->
+              <!-- Reason: Display file attachment if available -->
+              <div v-if="project.attachment_url" class="project-attachment">
+                <el-icon><Paperclip /></el-icon>
+                <a :href="project.attachment_url" target="_blank" class="attachment-link">
+                  {{ project.attachment_name || 'Attachment' }}
+                </a>
+                <span v-if="project.attachment_size" class="attachment-size">
+                  ({{ formatFileSize(project.attachment_size) }})
+                </span>
               </div>
             </div>
 
@@ -230,9 +279,15 @@ const toggleShowAllGithubProjects = () => {
               <p class="date">{{ edu.start_date }} - {{ edu.end_date }}</p>
             </div>
           </div>
-          <p v-if="getField(edu, 'description')" class="description">
+          <!-- Original implementation - commented out on 2025-12-30 -->
+          <!-- Reason: Replaced with HTML rendering support -->
+          <!-- <p v-if="getField(edu, 'description')" class="description">
             {{ getField(edu, 'description') }}
-          </p>
+          </p> -->
+
+          <!-- New implementation with HTML rendering and sanitization - added on 2025-12-30 -->
+          <!-- Reason: Render formatted education descriptions safely -->
+          <div v-if="getField(edu, 'description')" class="description" v-html="sanitizeHtml(getField(edu, 'description'))"></div>
         </div>
       </div>
 
@@ -770,6 +825,36 @@ const toggleShowAllGithubProjects = () => {
   color: #8FB8ED !important;
 }
 
+/* Project attachment - Added on 2025-12-30 */
+/* Reason: Style for project file attachment display */
+.project-attachment {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  color: rgba(255, 255, 255, 0.87);
+  font-size: 14px;
+}
+
+.project-attachment .attachment-link {
+  color: #A8C5F0 !important;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.2s ease;
+}
+
+.project-attachment .attachment-link:hover {
+  color: #C0D8FF !important;
+  text-decoration: underline;
+}
+
+.project-attachment .attachment-size {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 12px;
+}
+
 /* Certifications grid */
 /* Updated on 2025-11-30 - Changed background from white to gradient style */
 /* Reason: User requested matching grid colors with overall gradient background */
@@ -992,6 +1077,22 @@ const toggleShowAllGithubProjects = () => {
 
   .project-tech strong {
     color: #2c3e50;
+  }
+
+  .project-attachment {
+    color: #606266;
+  }
+
+  .project-attachment .attachment-link {
+    color: #646cff;
+  }
+
+  .project-attachment .attachment-link:hover {
+    color: #535bf2;
+  }
+
+  .project-attachment .attachment-size {
+    color: #909399;
   }
 
   .cert-item,
