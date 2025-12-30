@@ -63,3 +63,5 @@ yarn-error.log*
 
 # Terminal Paste Image folder
 .cp-images/
+
+resumedocs/
