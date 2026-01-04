@@ -1,7 +1,7 @@
 # Alembic 資料庫遷移指南
 
 **專案**: ResumeXLab - 個人履歷管理系統
-**更新日期**: 2025-12-30
+**更新日期**: 2026-01-04
 **作者**: Polo (林鴻全)
 
 ---
@@ -233,7 +233,136 @@ alembic revision --autogenerate -m "描述變更"
 
 ---
 
-### ❌ 問題 4：如何回滾遷移
+### ❌ 問題 4：SQLite 不支援 ALTER COLUMN 錯誤
+
+**錯誤訊息**：
+```bash
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) near "ALTER": syntax error
+[SQL: ALTER TABLE project_details ALTER COLUMN id SET NOT NULL]
+```
+
+**原因分析**：
+- SQLite 資料庫的限制：不支援 `ALTER COLUMN` 操作
+- Alembic 的 `--autogenerate` 可能會生成 SQLite 不支援的遷移操作
+- 常見於：
+  - 修改欄位類型
+  - 修改欄位的 NOT NULL 約束
+  - 修改欄位的 AUTOINCREMENT 屬性
+
+**檢查問題**：
+```bash
+# 查看生成的遷移檔案
+cat alembic/versions/xxxxxxxxxxxx_描述.py
+
+# 找出包含 op.alter_column 的行
+grep -n "alter_column" alembic/versions/xxxxxxxxxxxx_描述.py
+```
+
+**解決方案 A：手動編輯遷移檔案（推薦）**
+
+1. 找到遷移檔案中的 `op.alter_column()` 操作
+2. 註解掉不支援的操作，並添加說明
+
+範例：
+```python
+def upgrade() -> None:
+    # 原本的 ALTER COLUMN 操作 (已註解於 2026-01-04，原因：SQLite 不支援 ALTER COLUMN)
+    # op.alter_column('project_details', 'id',
+    #            existing_type=sa.INTEGER(),
+    #            nullable=False,
+    #            autoincrement=True)
+    # op.alter_column('project_details', 'created_at',
+    #            existing_type=sa.TIMESTAMP(),
+    #            type_=sa.DateTime(timezone=True),
+    #            existing_nullable=True,
+    #            existing_server_default=sa.text('(CURRENT_TIMESTAMP)'))
+
+    # 保留其他支援的操作（如 add_column）
+    op.add_column('projects', sa.Column('attachment_name', sa.String(length=255), nullable=True))
+    # ... 其他操作
+```
+
+3. 對應修改 `downgrade()` 函數：
+```python
+def downgrade() -> None:
+    # 刪除新增的欄位
+    op.drop_column('projects', 'attachment_name')
+    # ... 其他操作
+
+    # 原本的 ALTER COLUMN 操作 (已註解於 2026-01-04，原因：SQLite 不支援 ALTER COLUMN)
+    # op.alter_column('project_details', 'updated_at',
+    #            existing_type=sa.DateTime(timezone=True),
+    #            type_=sa.TIMESTAMP(),
+    #            existing_nullable=True,
+    #            existing_server_default=sa.text('(CURRENT_TIMESTAMP)'))
+```
+
+4. 重新執行遷移：
+```bash
+# 確認修改後再執行
+alembic upgrade head
+
+# 驗證成功
+alembic current
+```
+
+**解決方案 B：使用 SQLite 表重建策略**
+
+SQLite 不支援 ALTER COLUMN，但可以透過重建表來達成：
+
+```python
+def upgrade():
+    # 1. 建立新表（包含修改後的結構）
+    op.create_table('project_details_new',
+        sa.Column('id', sa.Integer(), nullable=False, primary_key=True),
+        sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('(CURRENT_TIMESTAMP)')),
+        # ... 其他欄位
+    )
+
+    # 2. 複製資料
+    op.execute('''
+        INSERT INTO project_details_new
+        SELECT * FROM project_details
+    ''')
+
+    # 3. 刪除舊表
+    op.drop_table('project_details')
+
+    # 4. 重新命名新表
+    op.rename_table('project_details_new', 'project_details')
+```
+
+**預防措施**：
+
+在 `alembic.ini` 或 `env.py` 中配置，避免生成不支援的操作：
+
+```python
+# alembic/env.py
+def run_migrations_online():
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+        # SQLite 不支援某些操作的配置
+        render_as_batch=True  # 使用批次模式
+    )
+```
+
+**常見 SQLite 不支援的操作**：
+- `ALTER COLUMN` (修改欄位)
+- `DROP CONSTRAINT` (刪除約束)
+- `ADD CONSTRAINT` 某些類型的約束
+- `RENAME COLUMN` (SQLite < 3.25.0)
+
+**替代方案**：
+- 新增欄位：✅ 支援 (`ADD COLUMN`)
+- 刪除欄位：✅ 支援 (`DROP COLUMN`, SQLite 3.35.0+)
+- 重新命名表：✅ 支援 (`RENAME TABLE`)
+- 修改欄位：❌ 不支援，需要重建表
+
+---
+
+### ❌ 問題 5：如何回滾遷移
 
 **場景**：
 - 剛建立的遷移有問題
@@ -414,7 +543,7 @@ docker exec resumexlab-backend alembic revision --autogenerate -m "新增技能�
 docker exec resumexlab-backend alembic upgrade head
 ```
 
-### 範例 3：處理版本衝突（本次實際案例）
+### 範例 3：處理版本衝突（實際案例 2025-12-30）
 
 ```bash
 # 問題：資料庫表已存在，但 Alembic 沒有版本記錄
@@ -427,6 +556,138 @@ docker exec resumexlab-backend alembic stamp head
 docker exec resumexlab-backend alembic current
 # 輸出: d711f173f9e3 (head)
 ```
+
+### 範例 4：處理 SQLite ALTER COLUMN 問題（實際案例 2026-01-04）
+
+**情境**：
+- 修改模型後自動生成遷移
+- 遷移包含 `op.alter_column()` 操作
+- SQLite 不支援導致錯誤
+
+**完整解決流程**：
+
+```bash
+# 1. 生成遷移檔案
+cd backend
+source .venv/bin/activate
+alembic revision --autogenerate -m "添加附件欄位到 work_experience 和 projects 表"
+
+# 輸出：
+# Generating /path/to/alembic/versions/ce10aaa23747_添加附件欄位到_work_experience_和_projects_表.py ... done
+# INFO  [alembic.autogenerate.compare] Detected NOT NULL on column 'project_details.id'
+# INFO  [alembic.autogenerate.compare] Detected type change from TIMESTAMP() to DateTime(timezone=True)
+# ...
+
+# 2. 檢查生成的遷移檔案
+cat alembic/versions/ce10aaa23747_添加附件欄位到_work_experience_和_projects_表.py
+
+# 3. 發現問題：包含 SQLite 不支援的 op.alter_column 操作
+grep -n "alter_column" alembic/versions/ce10aaa23747_*.py
+
+# 4. 嘗試執行遷移（失敗）
+alembic upgrade head
+# 錯誤：
+# sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) near "ALTER": syntax error
+# [SQL: ALTER TABLE project_details ALTER COLUMN id SET NOT NULL]
+
+# 5. 編輯遷移檔案，註解掉不支援的操作
+# 使用編輯器修改檔案，將 op.alter_column 相關行註解掉
+# 保留 op.add_column 等支援的操作
+
+# 6. 重新執行遷移（成功）
+alembic upgrade head
+# INFO  [alembic.runtime.migration] Running upgrade d711f173f9e3 -> ce10aaa23747
+
+# 7. 驗證結果
+alembic current
+# ce10aaa23747 (head)
+
+# 8. 檢查資料表結構
+sqlite3 data/resume.db "PRAGMA table_info(work_experience);"
+# 確認新欄位已成功添加：
+# 15|attachment_name|VARCHAR(255)|0||0
+# 16|attachment_path|VARCHAR(500)|0||0
+# 17|attachment_size|INTEGER|0||0
+# 18|attachment_type|VARCHAR(100)|0||0
+# 19|attachment_url|VARCHAR(500)|0||0
+
+# 9. 查看遷移歷史
+alembic history --verbose
+# Rev: ce10aaa23747 (head)
+# Parent: d711f173f9e3
+# ...
+```
+
+**修改後的遷移檔案內容**：
+
+```python
+"""添加附件欄位到 work_experience 和 projects 表
+
+Revision ID: ce10aaa23747
+Revises: d711f173f9e3
+Create Date: 2026-01-04 17:26:58.246721
+"""
+from typing import Sequence, Union
+from alembic import op
+import sqlalchemy as sa
+
+revision: str = 'ce10aaa23747'
+down_revision: Union[str, None] = 'd711f173f9e3'
+branch_labels: Union[str, Sequence[str], None] = None
+depends_on: Union[str, Sequence[str], None] = None
+
+def upgrade() -> None:
+    # 原本的 ALTER COLUMN 操作 (已註解於 2026-01-04，原因：SQLite 不支援 ALTER COLUMN)
+    # op.alter_column('project_details', 'id',
+    #            existing_type=sa.INTEGER(),
+    #            nullable=False,
+    #            autoincrement=True)
+    # op.alter_column('project_details', 'created_at',
+    #            existing_type=sa.TIMESTAMP(),
+    #            type_=sa.DateTime(timezone=True),
+    #            existing_nullable=True,
+    #            existing_server_default=sa.text('(CURRENT_TIMESTAMP)'))
+    # op.alter_column('project_details', 'updated_at',
+    #            existing_type=sa.TIMESTAMP(),
+    #            type_=sa.DateTime(timezone=True),
+    #            existing_nullable=True,
+    #            existing_server_default=sa.text('(CURRENT_TIMESTAMP)'))
+    # op.create_index(op.f('ix_project_details_id'), 'project_details', ['id'], unique=False)
+
+    # 新增附件欄位 (修改於 2026-01-04，原因：只保留新增欄位的操作)
+    op.add_column('projects', sa.Column('attachment_name', sa.String(length=255), nullable=True))
+    op.add_column('projects', sa.Column('attachment_path', sa.String(length=500), nullable=True))
+    op.add_column('projects', sa.Column('attachment_size', sa.Integer(), nullable=True))
+    op.add_column('projects', sa.Column('attachment_type', sa.String(length=100), nullable=True))
+    op.add_column('projects', sa.Column('attachment_url', sa.String(length=500), nullable=True))
+    op.add_column('work_experience', sa.Column('attachment_name', sa.String(length=255), nullable=True))
+    op.add_column('work_experience', sa.Column('attachment_path', sa.String(length=500), nullable=True))
+    op.add_column('work_experience', sa.Column('attachment_size', sa.Integer(), nullable=True))
+    op.add_column('work_experience', sa.Column('attachment_type', sa.String(length=100), nullable=True))
+    op.add_column('work_experience', sa.Column('attachment_url', sa.String(length=500), nullable=True))
+
+def downgrade() -> None:
+    # 刪除附件欄位 (修改於 2026-01-04，原因：只保留刪除欄位的操作)
+    op.drop_column('work_experience', 'attachment_url')
+    op.drop_column('work_experience', 'attachment_type')
+    op.drop_column('work_experience', 'attachment_size')
+    op.drop_column('work_experience', 'attachment_path')
+    op.drop_column('work_experience', 'attachment_name')
+    op.drop_column('projects', 'attachment_url')
+    op.drop_column('projects', 'attachment_type')
+    op.drop_column('projects', 'attachment_size')
+    op.drop_column('projects', 'attachment_path')
+    op.drop_column('projects', 'attachment_name')
+
+    # 原本的 ALTER COLUMN 操作 (已註解於 2026-01-04，原因：SQLite 不支援 ALTER COLUMN)
+    # (已省略，同 upgrade 函數)
+```
+
+**關鍵學習點**：
+1. ✅ SQLite 支援 `ADD COLUMN` - 可以安全使用
+2. ❌ SQLite 不支援 `ALTER COLUMN` - 需要註解或使用表重建策略
+3. ⚠️ 使用 `--autogenerate` 後必須檢查生成的遷移檔案
+4. 📝 註解時要說明日期和原因，方便日後追蹤
 
 ---
 
@@ -549,6 +810,7 @@ alembic upgrade head
 | 版本 | 日期 | 變更說明 |
 |------|------|----------|
 | 1.0 | 2025-12-30 | 初版建立，記錄常見問題與解決方案 |
+| 1.1 | 2026-01-04 | 新增 SQLite ALTER COLUMN 問題及解決方案，新增實際案例範例 |
 
 ---
 
@@ -587,6 +849,29 @@ alembic upgrade head --verbose  # 詳細輸出模式
 
 ---
 
-**最後更新**: 2025-12-30
+## 快速問題診斷流程圖
+
+```
+遷移失敗？
+    │
+    ├─> 錯誤訊息包含 "table already exists"
+    │   └─> 使用 alembic stamp head 標記版本
+    │
+    ├─> 錯誤訊息包含 "near ALTER: syntax error"
+    │   └─> 編輯遷移檔案，註解掉 op.alter_column 操作
+    │
+    ├─> 錯誤訊息包含 "Target database is not up to date"
+    │   └─> 先執行 alembic upgrade head，再建立新遷移
+    │
+    └─> 其他錯誤
+        ├─> 查看 alembic history 檢查版本歷史
+        ├─> 查看 alembic current 檢查當前版本
+        ├─> 檢查 alembic/env.py 的 target_metadata 設定
+        └─> 清除 Python cache 後重試
+```
+
+---
+
+**最後更新**: 2026-01-04
 **維護者**: Polo (林鴻全)
 **專案**: ResumeXLab

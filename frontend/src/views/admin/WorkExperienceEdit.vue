@@ -1,12 +1,30 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { QuillEditor } from '@vueup/vue-quill'
+import '@vueup/vue-quill/dist/vue-quill.snow.css'
 import { useResumeStore } from '@/stores/resume'
 
 const resumeStore = useResumeStore()
 const loading = ref(false)
 const dialogVisible = ref(false)
 const isEditing = ref(false)
+
+// Quill editor configuration
+const quillModules = {
+  toolbar: [
+    ['bold', 'italic', 'underline', 'strike'],
+    ['blockquote', 'code-block'],
+    [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+    [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+    ['link'],
+    ['clean']
+  ]
+}
+
+const quillStyles = {
+  height: '200px'
+}
 const formData = ref({
   company_zh: '',
   company_en: '',
@@ -493,12 +511,22 @@ const handleDownload = async (url, fileName) => {
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="Description (Chinese)">
-              <el-input v-model="formData.description_zh" type="textarea" :rows="5" />
+              <QuillEditor
+                v-model:content="formData.description_zh"
+                content-type="html"
+                :modules="quillModules"
+                :styles="quillStyles"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="Description (English)">
-              <el-input v-model="formData.description_en" type="textarea" :rows="5" />
+              <QuillEditor
+                v-model:content="formData.description_en"
+                content-type="html"
+                :modules="quillModules"
+                :styles="quillStyles"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -648,6 +676,25 @@ const handleDownload = async (url, fileName) => {
 /* Reason: Set textarea text to left-align for better readability */
 :deep(.el-textarea__inner) {
   text-align: left;
+}
+
+/* Quill editor styles - Added on 2025-12-07 */
+/* Reason: Integrate Quill rich text editor for Description fields */
+:deep(.ql-container) {
+  font-family: inherit;
+  font-size: 1em;
+}
+
+:deep(.ql-toolbar) {
+  background-color: #f5f7fa;
+  border-radius: 4px 4px 0 0;
+  border: 1px solid #dcdfe6;
+  border-bottom: none;
+}
+
+:deep(.ql-container) {
+  border: 1px solid #dcdfe6;
+  border-radius: 0 0 4px 4px;
 }
 
 /* Light mode specific styles */

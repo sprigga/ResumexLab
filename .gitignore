@@ -23,6 +23,11 @@ wheels/
 # Database
 *.db
 *.db-journal
+# 原本設定 (已註解於 2026-01-04，原因：需要排除備份檔案但保留主資料庫)
+# 新設定：排除備份檔案
+**/resume_backup_*.db
+# Alembic 遷移備份
+backend/alembic/versions/*.py.bak
 
 # Environment
 .env
