@@ -73,33 +73,77 @@ cd "$BACKEND_DIR"
 print_info "工作目錄: $BACKEND_DIR"
 
 # ========================================
-# 檢查 1: 虛擬環境
+# 檢查 1: Python 環境
 # ========================================
-print_header "檢查 1: 虛擬環境"
+print_header "檢查 1: Python 環境"
 
-if [ -d ".venv" ]; then
-    print_success "虛擬環境存在"
+# 原本虛擬環境檢查 - 已註解於 2026-01-05
+# 原因: 改為檢查 Python 環境，而非檢查特定虛擬環境目錄
+# if [ -d ".venv" ]; then
+#     print_success "虛擬環境存在"
+#
+#     # 檢查 alembic 是否安裝
+#     if [ -f ".venv/bin/alembic" ]; then
+#         print_success "Alembic 已安裝"
+#
+#         # 取得版本
+#         source .venv/bin/activate
+#         ALEMBIC_VERSION=$(alembic --version 2>&1 | grep -v "^INFO")
+#         print_info "版本: $ALEMBIC_VERSION"
+#     else
+#         print_error "Alembic 未安裝"
+#         ISSUES_FOUND=$((ISSUES_FOUND + 1))
+#         print_fix "執行: pip install alembic"
+#         FIXES_SUGGESTED=$((FIXES_SUGGESTED + 1))
+#     fi
+# else
+#     print_error "虛擬環境不存在"
+#     ISSUES_FOUND=$((ISSUES_FOUND + 1))
+#     print_fix "執行: python -m venv .venv"
+#     FIXES_SUGGESTED=$((FIXES_SUGGESTED + 1))
+#     exit 1
+# fi
 
-    # 檢查 alembic 是否安裝
-    if [ -f ".venv/bin/alembic" ]; then
-        print_success "Alembic 已安裝"
+# 新 Python 環境檢查 - 修改於 2026-01-05
+# 原因: 改為檢查 Python 是否可用，支援多種 Python 環境管理方式
+if ! command -v python &> /dev/null && ! command -v python3 &> /dev/null; then
+    print_error "找不到 Python 環境"
+    ISSUES_FOUND=$((ISSUES_FOUND + 1))
+    print_fix "請安裝 Python 3.8 或更高版本"
+    FIXES_SUGGESTED=$((FIXES_SUGGESTED + 1))
+    exit 1
+fi
 
-        # 取得版本
-        source .venv/bin/activate
-        ALEMBIC_VERSION=$(alembic --version 2>&1 | grep -v "^INFO")
+# 取得 Python 指令和版本
+if command -v python &> /dev/null; then
+    PYTHON_CMD="python"
+else
+    PYTHON_CMD="python3"
+fi
+
+PYTHON_VERSION=$($PYTHON_CMD --version 2>&1 | awk '{print $2}')
+print_success "Python 環境存在: $PYTHON_CMD $PYTHON_VERSION"
+
+# 檢查 Alembic 是否可用
+if command -v alembic &> /dev/null; then
+    print_success "Alembic 已安裝"
+
+    # 取得版本
+    ALEMBIC_VERSION=$(alembic --version 2>&1 | grep -v "^INFO")
+    print_info "版本: $ALEMBIC_VERSION"
+else
+    # 檢查是否可以透過 python -m alembic 執行
+    if $PYTHON_CMD -m alembic --version &> /dev/null; then
+        print_success "Alembic 已安裝 (作為 Python 模組)"
+
+        ALEMBIC_VERSION=$($PYTHON_CMD -m alembic --version 2>&1 | grep -v "^INFO")
         print_info "版本: $ALEMBIC_VERSION"
     else
         print_error "Alembic 未安裝"
         ISSUES_FOUND=$((ISSUES_FOUND + 1))
-        print_fix "執行: pip install alembic"
+        print_fix "執行: pip install alembic 或 uv pip install alembic"
         FIXES_SUGGESTED=$((FIXES_SUGGESTED + 1))
     fi
-else
-    print_error "虛擬環境不存在"
-    ISSUES_FOUND=$((ISSUES_FOUND + 1))
-    print_fix "執行: python -m venv .venv"
-    FIXES_SUGGESTED=$((FIXES_SUGGESTED + 1))
-    exit 1
 fi
 
 # ========================================

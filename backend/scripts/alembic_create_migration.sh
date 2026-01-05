@@ -91,12 +91,32 @@ print_info "遷移描述: $MIGRATION_MESSAGE"
 # 1. 健康檢查
 print_header "步驟 1: 環境檢查"
 
-# 檢查虛擬環境
-if [ ! -d ".venv" ]; then
-    print_error "找不到虛擬環境 (.venv)"
+# 原本虛擬環境檢查 - 已註解於 2026-01-05
+# 原因: 改為檢查 Python 環境，而非檢查特定虛擬環境目錄
+# if [ ! -d ".venv" ]; then
+#     print_error "找不到虛擬環境 (.venv)"
+#     exit 1
+# fi
+# print_success "虛擬環境存在"
+
+# 新 Python 環境檢查 - 修改於 2026-01-05
+# 原因: 改為檢查 Python 是否可用，支援多種 Python 環境管理方式
+if ! command -v python &> /dev/null && ! command -v python3 &> /dev/null; then
+    print_error "找不到 Python 環境"
+    print_info "請確保 Python 已安裝並在 PATH 中"
     exit 1
 fi
-print_success "虛擬環境存在"
+
+# 取得 Python 版本資訊
+if command -v python &> /dev/null; then
+    PYTHON_VERSION=$(python --version 2>&1 | awk '{print $2}')
+    PYTHON_CMD="python"
+else
+    PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
+    PYTHON_CMD="python3"
+fi
+
+print_success "Python 環境存在: $PYTHON_CMD $PYTHON_VERSION"
 
 # 檢查 alembic.ini
 if [ ! -f "alembic.ini" ]; then
@@ -116,7 +136,7 @@ else
 fi
 
 # 啟動虛擬環境
-source .venv/bin/activate
+# source .venv/bin/activate
 
 # 2. 檢查當前版本
 print_header "步驟 2: 檢查當前版本"
