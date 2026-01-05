@@ -99,15 +99,17 @@ class AlembicHelper:
             # 切換到 backend 目錄
             os.chdir(self.backend_dir)
 
-            # 啟動虛擬環境並執行指令
-            cmd = f"source .venv/bin/activate && alembic {args}"
+            # 原本使用虛擬環境的指令 (已註解於 2026-01-05，原因：Docker 環境中無虛擬環境，改用 python -m)
+            # cmd = f"source .venv/bin/activate && alembic {args}"
+
+            # 新方法：直接使用 python -m alembic 執行 (修改於 2026-01-05，原因：支援 Docker 環境)
+            cmd = ["python", "-m", "alembic"] + args.split()
 
             result = subprocess.run(
                 cmd,
-                shell=True,
                 capture_output=capture_output,
                 text=True,
-                executable="/bin/bash"
+                cwd=self.backend_dir
             )
 
             return result
