@@ -12,12 +12,30 @@ router = APIRouter()
 
 @router.get("/", response_model=PersonalInfoInDB)
 async def get_personal_info(db: Session = Depends(get_db)):
-    """Get personal information (public endpoint)"""
+    """Get personal information (public endpoint)
+
+    已修改於 2025-01-12，原因：當沒有個人資訊時，回傳預設空物件而不是 404 錯誤
+    這樣可以避免前端顯示 "No resume data available" 訊息
+    """
     info = db.query(PersonalInfo).first()
     if not info:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Personal information not found"
+        # 回傳預設的空物件結構，讓前端可以正常渲染
+        return PersonalInfoInDB(
+            id=0,
+            name_zh="",
+            name_en="",
+            phone="",
+            email="",
+            address_zh="",
+            address_en="",
+            objective_zh="",
+            objective_en="",
+            personality_zh="",
+            personality_en="",
+            summary_zh="",
+            summary_en="",
+            created_at=None,
+            updated_at=None
         )
     return info
 

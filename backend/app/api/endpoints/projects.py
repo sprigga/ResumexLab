@@ -22,9 +22,10 @@ router = APIRouter()
 
 # File upload configuration - added on 2025-12-22
 # Reason: Configure upload directory and allowed file types for projects
+# 已修改於 2025-01-12，原因：將檔案大小限制從 10MB 提高到 100MB
 UPLOAD_DIR = Path("uploads")
 ALLOWED_EXTENSIONS = {".pdf", ".doc", ".docx", ".txt", ".jpg", ".jpeg", ".png"}
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
 
 def ensure_upload_dir():
     """Create upload directory if it doesn't exist"""

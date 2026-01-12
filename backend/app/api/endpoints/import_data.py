@@ -18,6 +18,9 @@ from sqlalchemy.orm import sessionmaker
 
 router = APIRouter(prefix="", tags=["Import"])
 
+# 已新增於 2025-01-12，原因：設定資料庫匯入的檔案大小限制為 100MB
+MAX_DB_FILE_SIZE = 100 * 1024 * 1024  # 100MB
+
 # 已移除於 2025-12-05，原因：移除 PDF 匯入功能
 # 原函式：import_pdf - 上傳 PDF 並匯入履歷資料
 
@@ -77,12 +80,28 @@ async def import_database(file: UploadFile = File(...)):
     """
     Import a SQLite database file (for restoration or migration)
     WARNING: This will replace the current database!
+
+    已修改於 2025-01-12，原因：新增檔案大小檢查，限制為 100MB
     """
     if not file.filename.lower().endswith('.db'):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Only .db files are allowed"
         )
+
+    # 已新增於 2025-01-12，原因：檢查檔案大小
+    # 讀取檔案內容以檢查大小
+    file_content = await file.read()
+    file_size = len(file_content)
+
+    if file_size > MAX_DB_FILE_SIZE:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"File size exceeds maximum allowed size of {MAX_DB_FILE_SIZE / (1024 * 1024):.0f}MB"
+        )
+
+    # 重置檔案指標以便後續讀取
+    await file.seek(0)
 
     try:
         # 已修正於 2025-12-05，原因：DATABASE_URL = "sqlite:///./data/resume.db" 相對於 backend 目錄
@@ -110,9 +129,10 @@ async def import_database(file: UploadFile = File(...)):
         # Dispose of the current engine (closes all connections in the pool)
         engine.dispose()
 
+        # 已修改於 2025-01-12，原因：使用已讀取的檔案內容直接寫入
         # Save the uploaded database file
         with open(db_path, "wb") as buffer:
-            shutil.copyfileobj(file.file, buffer)
+            buffer.write(file_content)
 
         # 已新增於 2025-12-05，原因：資料庫檔案更新後，重新建立資料庫引擎和 Session
         # Step 2: Recreate the engine and SessionLocal with the new database file

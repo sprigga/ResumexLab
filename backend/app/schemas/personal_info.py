@@ -32,8 +32,10 @@ class PersonalInfoUpdate(PersonalInfoBase):
 class PersonalInfoInDB(PersonalInfoBase):
     """Personal info database schema"""
     id: int
-    created_at: datetime
-    updated_at: datetime
+    # 已修改於 2025-01-12，原因：允許 created_at 和 updated_at 為 None
+    # 這樣當資料庫沒有個人資訊時，可以回傳空物件而不是 404 錯誤
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
     class Config:
         from_attributes = True

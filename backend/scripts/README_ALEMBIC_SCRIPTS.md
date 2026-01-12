@@ -31,53 +31,53 @@
 
 ```bash
 # 查看使用說明
-python script/alembic_helper.py help
+python scripts/alembic_helper.py help
 
 # 檢查當前狀態
-python script/alembic_helper.py status
+python scripts/alembic_helper.py status
 
 # 執行健康檢查
-python script/alembic_helper.py check
+python scripts/alembic_helper.py check
 
 # 備份資料庫
-python script/alembic_helper.py backup
+python scripts/alembic_helper.py backup
 
 # 執行遷移（會自動備份）
-python script/alembic_helper.py migrate
+python scripts/alembic_helper.py migrate
 
 # 標記資料庫版本
-python script/alembic_helper.py stamp
+python scripts/alembic_helper.py stamp
 
 # 修復 SQLite ALTER COLUMN 問題
-python script/alembic_helper.py fix-sqlite
+python scripts/alembic_helper.py fix-sqlite
 
 # 回滾到上一個版本
-python script/alembic_helper.py rollback
+python scripts/alembic_helper.py rollback
 ```
 
 #### 使用範例
 
 ```bash
 # 場景 1: 首次設定，資料庫已有表但未標記版本
-python script/alembic_helper.py status
+python scripts/alembic_helper.py status
 # 發現: "資料庫尚未標記版本"
-python script/alembic_helper.py stamp
+python scripts/alembic_helper.py stamp
 # 結果: 資料庫被標記為最新版本
 
 # 場景 2: 執行新的遷移
-python script/alembic_helper.py migrate
+python scripts/alembic_helper.py migrate
 # 自動備份資料庫
 # 執行遷移
 # 顯示結果
 
 # 場景 3: 遷移失敗，出現 ALTER COLUMN 錯誤
-python script/alembic_helper.py fix-sqlite
+python scripts/alembic_helper.py fix-sqlite
 # 自動掃描最新遷移檔案
 # 註解掉不支援的操作
 # 備份原檔案
 
 # 場景 4: 需要回滾
-python script/alembic_helper.py rollback
+python scripts/alembic_helper.py rollback
 # 自動備份資料庫
 # 回滾到上一版本
 # 顯示當前版本
@@ -93,10 +93,10 @@ python script/alembic_helper.py rollback
 
 ```bash
 # 創建遷移（不自動應用）
-./script/alembic_create_migration.sh "遷移描述"
+./scripts/alembic_create_migration.sh "遷移描述"
 
 # 創建並自動應用遷移
-./script/alembic_create_migration.sh "遷移描述" --apply
+./scripts/alembic_create_migration.sh "遷移描述" --apply
 ```
 
 #### 執行流程
@@ -137,13 +137,13 @@ python script/alembic_helper.py rollback
 
 ```bash
 # 範例 1: 新增欄位
-./script/alembic_create_migration.sh "新增使用者頭像欄位"
+./scripts/alembic_create_migration.sh "新增使用者頭像欄位"
 
 # 範例 2: 新增表並自動應用
-./script/alembic_create_migration.sh "新增技能表" --apply
+./scripts/alembic_create_migration.sh "新增技能表" --apply
 
 # 範例 3: 修改現有結構
-./script/alembic_create_migration.sh "更新工作經歷表結構"
+./scripts/alembic_create_migration.sh "更新工作經歷表結構"
 ```
 
 #### 輸出範例
@@ -189,7 +189,7 @@ python script/alembic_helper.py rollback
 #### 基本用法
 
 ```bash
-./script/alembic_diagnose.sh
+./scripts/alembic_diagnose.sh
 ```
 
 #### 診斷項目
@@ -267,13 +267,13 @@ python script/alembic_helper.py rollback
 
 ```bash
 # 1. 檢查環境
-./script/alembic_diagnose.sh
+./scripts/alembic_diagnose.sh
 
 # 2. 如果資料庫已有表，標記版本
-python script/alembic_helper.py stamp
+python scripts/alembic_helper.py stamp
 
 # 3. 驗證狀態
-python script/alembic_helper.py status
+python scripts/alembic_helper.py status
 ```
 
 ### 場景 2: 新增功能需要修改資料庫
@@ -283,49 +283,49 @@ python script/alembic_helper.py status
 # 編輯 backend/app/models/*.py
 
 # 2. 創建遷移
-./script/alembic_create_migration.sh "新增功能XYZ的資料表"
+./scripts/alembic_create_migration.sh "新增功能XYZ的資料表"
 
 # 3. 檢查生成的遷移檔案
 # 如有 SQLite 兼容性問題，腳本會提示並提供修復選項
 
 # 4. 應用遷移
-python script/alembic_helper.py migrate
+python scripts/alembic_helper.py migrate
 ```
 
 ### 場景 3: 遷移失敗需要修復
 
 ```bash
 # 1. 診斷問題
-./script/alembic_diagnose.sh
+./scripts/alembic_diagnose.sh
 
 # 2. 如果是 ALTER COLUMN 問題
-python script/alembic_helper.py fix-sqlite
+python scripts/alembic_helper.py fix-sqlite
 
 # 3. 重新執行遷移
-python script/alembic_helper.py migrate
+python scripts/alembic_helper.py migrate
 ```
 
 ### 場景 4: 需要回滾變更
 
 ```bash
 # 1. 查看當前狀態
-python script/alembic_helper.py status
+python scripts/alembic_helper.py status
 
 # 2. 回滾到上一版本
-python script/alembic_helper.py rollback
+python scripts/alembic_helper.py rollback
 
 # 3. 驗證結果
-python script/alembic_helper.py status
+python scripts/alembic_helper.py status
 ```
 
 ### 場景 5: 定期維護檢查
 
 ```bash
 # 每週執行一次健康檢查
-python script/alembic_helper.py check
+python scripts/alembic_helper.py check
 
 # 或使用診斷工具
-./script/alembic_diagnose.sh
+./scripts/alembic_diagnose.sh
 ```
 
 ---
@@ -379,7 +379,7 @@ migrations=(
 
 for msg in "${migrations[@]}"; do
     echo "創建遷移: $msg"
-    ./script/alembic_create_migration.sh "$msg"
+    ./scripts/alembic_create_migration.sh "$msg"
     sleep 2
 done
 
@@ -430,10 +430,10 @@ echo "所有遷移已創建，請檢查後執行應用"
 
 ```bash
 # 確認執行權限
-ls -l script/alembic_*.sh
+ls -l scripts/alembic_*.sh
 
 # 如果沒有執行權限，添加權限
-chmod +x script/alembic_*.sh script/alembic_helper.py
+chmod +x scripts/alembic_*.sh scripts/alembic_helper.py
 ```
 
 ### 問題 2: "找不到 alembic 指令"
@@ -453,7 +453,7 @@ pip install alembic
 ```bash
 # 依照診斷腳本的建議逐一修復
 # 修復後再次執行診斷
-./script/alembic_diagnose.sh
+./scripts/alembic_diagnose.sh
 ```
 
 ### 問題 4: 自動修復失敗

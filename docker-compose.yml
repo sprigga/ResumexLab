@@ -13,8 +13,8 @@ services:
     container_name: resumexlab-backend
     restart: unless-stopped
     ports:
-      # 原設定: "8000:8000" - 改為冷門端口避免衝突與安全風險
-      # 修改日期: 2025-11-29
+      # 生產環境 (GCP VM): 使用自定義端口避免衝突
+      # 修改日期: 2025-01-12 - 恢復為生產環境設定
       - "58433:8000"
     environment:
       # API 設定
@@ -31,9 +31,8 @@ services:
       - ACCESS_TOKEN_EXPIRE_MINUTES=1440
 
       # CORS 設定
-      # 原設定: ["http://localhost:3000","http://localhost:8080","http://localhost"]
-      # 修改日期: 2025-11-29 - 更新為新的 frontend port
-      # 修改日期: 2025-11-30 - Fixed to JSON format for Pydantic parsing
+      # 生產環境設定: 允許前端訪問 (需修改為實際域名或 IP)
+      # 修改日期: 2025-01-12 - 恢復生產環境 CORS 設定
       - BACKEND_CORS_ORIGINS=["http://localhost:58432", "http://localhost:3000", "http://localhost:8080", "http://localhost"]
     volumes:
       # 掛載資料庫文件，確保數據持久化
@@ -57,8 +56,8 @@ services:
     container_name: resumexlab-frontend
     restart: unless-stopped
     ports:
-      # 原設定: "80:80" - 改為冷門端口避免衝突與安全風險
-      # 修改日期: 2025-11-29
+      # 生產環境 (GCP VM): 使用自定義端口避免衝突
+      # 修改日期: 2025-01-12 - 恢復為生產環境設定
       - "58432:80"
     # depends_on:
       # - backend

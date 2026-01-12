@@ -9,7 +9,8 @@
       "Bash(python3:*)",
       "Bash(source backend/.venv/bin/activate)",
       "Bash(uvicorn:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(gh auth:*)"
     ],
     "deny": [],
     "ask": []

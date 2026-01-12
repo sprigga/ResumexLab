@@ -22,7 +22,6 @@
     "markdown-preview-enhanced.plantumlServer": "https://www.plantuml.com/plantuml/svg/",
     "claudeCode.useTerminal": true,
     "claudeCode.useCtrlEnterToSend": true,
-    "chat.useClaudeSkills": true,
     "inlineChat.enableV2": true,
     "claudeCode.environmentVariables": [
         
@@ -30,5 +29,6 @@
 
         
 
-    ]
+    ],
+    "chat.useAgentSkills": true
 }

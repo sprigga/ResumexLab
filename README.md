@@ -210,19 +210,41 @@ resumexlab/
 
 ### 方法一：Docker 部署 (推薦)
 
+我們提供兩個 Docker Compose 配置檔案:
+
+#### 開發環境 (本地開發)
+
 ```bash
 # 1. 克隆專案
 git clone <repository-url>
 cd resumexlab
 
-# 2. 啟動服務 (使用 Docker Compose)
+# 2. 啟動開發環境
+docker-compose -f docker-compose.dev.yml up -d
+
+# 3. 訪問應用
+# 前端: http://localhost:8000
+# 後端: http://localhost:8001
+# API 文件: http://localhost:8001/docs
+```
+
+#### 生產環境 (GCP VM)
+
+```bash
+# 1. 克隆專案
+git clone <repository-url>
+cd resumexlab
+
+# 2. 啟動生產環境
 docker-compose up -d
 
 # 3. 訪問應用
-# 前端: http://localhost:58432
-# 後端: http://localhost:58433
-# API 文件: http://localhost:58433/docs
+# 前端: http://<YOUR-IP>:58432
+# 後端: http://<YOUR-IP>:58433
+# API 文件: http://<YOUR-IP>:58433/docs
 ```
+
+**詳細部署指南**: 請參考 [`DOCKER_COMPOSE_USAGE.md`](./DOCKER_COMPOSE_USAGE.md) 和 [`scripts/DEPLOYMENT_GUIDE.md`](./scripts/DEPLOYMENT_GUIDE.md)
 
 ### 方法二：手動部署
 
@@ -773,9 +795,13 @@ Polo (林鴻全)
   - 前端: http://localhost:5173 (Vite dev server)
   - 後端: http://localhost:8000 (Uvicorn)
 
-- **Docker 生產環境**:
+- **Docker 生產環境** (GCP VM):
   - 前端: http://localhost:58432 (Nginx)
   - 後端: http://localhost:58433 (Uvicorn)
+
+- **Docker 開發環境** (本地):
+  - 前端: http://localhost:8000 (Nginx)
+  - 後端: http://localhost:8001 (Uvicorn)
 
 ### 資料庫位置
 - 資料庫檔案位於: `backend/data/resume.db`
