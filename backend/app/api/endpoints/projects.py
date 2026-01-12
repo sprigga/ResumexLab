@@ -131,7 +131,7 @@ async def create_project_with_file(
         if not validate_file(file):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid file type or size. Allowed types: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG. Max size: 10MB"
+                detail="Invalid file type or size. Allowed types: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG. Max size: 100MB"
             )
 
     # Prepare project data with proper date parsing - fixed on 2025-12-22
@@ -215,7 +215,7 @@ async def update_project_with_file(
         if not validate_file(file):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid file type or size. Allowed types: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG. Max size: 10MB"
+                detail="Invalid file type or size. Allowed types: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG. Max size: 100MB"
             )
 
     # Prepare project data with proper date parsing - fixed on 2025-12-22

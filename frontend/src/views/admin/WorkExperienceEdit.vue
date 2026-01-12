@@ -113,10 +113,11 @@ const handleEdit = (row) => {
 const handleFileChange = (uploadFile, uploadFiles) => {
   const file = uploadFile.raw
   if (file) {
-    // Validate file size (10MB limit)
-    const maxSize = 10 * 1024 * 1024
+    // Validate file size (20MB limit) - modified on 2026-01-12
+    // Reason: Update max file size from 10MB to 20MB
+    const maxSize = 20 * 1024 * 1024
     if (file.size > maxSize) {
-      ElMessage.error('File size must be less than 10MB')
+      ElMessage.error('File size must be less than 20MB')
       // Clear the upload
       if (uploadRef.value) {
         uploadRef.value.clearFiles()
@@ -550,7 +551,7 @@ const handleDownload = async (url, fileName) => {
                   <el-button type="primary">{{ isEditing ? 'Change File' : 'Select File' }}</el-button>
                   <template #tip>
                     <div class="el-upload__tip">
-                      Supported formats: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG (Max 10MB)
+                      Supported formats: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG (Max 20MB)
                     </div>
                   </template>
                 </el-upload>

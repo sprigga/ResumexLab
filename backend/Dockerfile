@@ -47,4 +47,6 @@ EXPOSE 8000
 
 # 啟動應用
 # 使用 uvicorn 運行 FastAPI 應用
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# 已修改於 2025-01-12，原因：增加 --limit-max-requests 以支援大檔案上傳（最大 200MB）
+# --timeout-keep-alive 300: 延長連線保持時間至 5 分鐘
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "300"]

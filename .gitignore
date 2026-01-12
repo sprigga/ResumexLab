@@ -72,3 +72,9 @@ yarn-error.log*
 resumedocs/
 
 docs/GITHUB.md
+
+# Test files (added 2026-01-12)
+.history-memo/
+test_api.html
+test_api_connection.js
+test_db_import.py

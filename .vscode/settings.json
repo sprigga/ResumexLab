@@ -30,5 +30,6 @@
         
 
     ],
-    "chat.useAgentSkills": true
+    "chat.useAgentSkills": true,
+    "editor.fontSize": 14
 }

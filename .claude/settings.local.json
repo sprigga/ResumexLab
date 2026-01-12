@@ -15,7 +15,16 @@
       "Bash(source backend/.venv/bin/activate)",
       "Bash(uvicorn:*)",
       "Bash(cat:*)",
-      "Bash(gh auth:*)"
+      "Bash(git fetch:*)",
+      "Bash(git restore:*)",
+      "Bash(gh auth logout:*)",
+      "Bash(gh auth:*)",
+      "Bash(alembic current:*)",
+      "Bash(alembic history:*)",
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(git stash push:*)",
+      "Bash(docker-compose logs backend)"
     ],
     "deny": [],
     "ask": []
