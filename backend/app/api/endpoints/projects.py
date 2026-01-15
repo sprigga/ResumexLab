@@ -5,7 +5,7 @@ Date: 2025-11-30
 """
 
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form, Body
 from sqlalchemy.orm import Session
 import os
 import uuid
@@ -279,4 +279,41 @@ async def update_project_with_file(
 
     db.commit()
     db.refresh(project)
+    return project
+
+
+# New endpoint to update attachment name only - added on 2025-01-15
+# Reason: Allow updating attachment display name without uploading a new file
+# Modified on 2025-01-15: Changed from Form to Body for better compatibility with axios
+@router.patch("/{project_id}/attachment-name", response_model=ProjectResponse)
+def update_project_attachment_name(
+    project_id: int,
+    attachment_name: str = Body(..., embed=True),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Update only the attachment_name field of a project
+
+    This allows changing the display name of an attachment without
+    uploading a new file or modifying other project fields.
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Received attachment_name update request: project_id={project_id}, attachment_name={attachment_name}")
+
+    # Get existing project
+    project = db.query(Project).filter(Project.id == project_id).first()
+    if not project:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Project not found"
+        )
+
+    # Update only the attachment_name field
+    project.attachment_name = attachment_name
+
+    db.commit()
+    db.refresh(project)
+    logger.info(f"Updated attachment_name for project {project_id} to '{attachment_name}'")
     return project

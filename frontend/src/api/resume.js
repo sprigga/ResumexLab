@@ -54,6 +54,13 @@ export const resumeAPI = {
     return apiClient.delete(`/projects/${id}`)
   },
 
+  // Update project attachment name only - added on 2025-01-15
+  // Reason: Allow updating attachment display name without uploading a new file
+  updateProjectAttachmentName(id, attachmentName) {
+    // Use JSON instead of FormData for simpler API and better reliability
+    return apiClient.patch(`/projects/${id}/attachment-name`, { attachment_name: attachmentName })
+  },
+
   // Education
   // 已新增於 2025-11-30，原因：新增教育背景管理功能
   getEducation() {

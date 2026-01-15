@@ -170,6 +170,26 @@ export const useResumeStore = defineStore('resume', () => {
     }
   }
 
+  // Update project attachment name only - added on 2025-01-15
+  // Reason: Allow updating attachment display name without uploading a new file
+  async function updateProjectAttachmentName(id, attachmentName) {
+    loading.value = true
+    error.value = null
+    try {
+      const response = await resumeAPI.updateProjectAttachmentName(id, attachmentName)
+      const index = projects.value.findIndex(p => p.id === id)
+      if (index !== -1) {
+        projects.value[index] = response.data
+      }
+      return response.data
+    } catch (err) {
+      error.value = err.message
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   // Education - 已新增於 2025-11-30
   async function fetchEducation() {
     loading.value = true
@@ -579,6 +599,7 @@ export const useResumeStore = defineStore('resume', () => {
     createProject,
     updateProject,
     deleteProject,
+    updateProjectAttachmentName,
     fetchEducation,
     createEducation,
     updateEducation,

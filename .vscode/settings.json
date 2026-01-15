@@ -20,7 +20,7 @@
         "qwen"
     ],
     "markdown-preview-enhanced.plantumlServer": "https://www.plantuml.com/plantuml/svg/",
-    "claudeCode.useTerminal": true,
+    "claudeCode.useTerminal": false,
     "claudeCode.useCtrlEnterToSend": true,
     "inlineChat.enableV2": true,
     "claudeCode.environmentVariables": [

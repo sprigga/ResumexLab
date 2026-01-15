@@ -1,6 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+// Import icons - added on 2025-01-15
+// Reason: Use Edit, Check, Close icons for attachment name editing
+import { Document, Download, Edit, Check, Close } from '@element-plus/icons-vue'
 import { useResumeStore } from '@/stores/resume'
 
 // Import Quill Editor - added on 2025-12-30
@@ -156,14 +159,49 @@ const removeSelectedFile = () => {
   }
 }
 
+// Edit attachment name - added on 2025-01-15
+// Reason: Allow editing the attachment display name without uploading a new file
+const editingAttachmentName = ref(false)
+const tempAttachmentName = ref('')
+
+const startEditAttachmentName = () => {
+  tempAttachmentName.value = formData.value.attachment_name || ''
+  editingAttachmentName.value = true
+}
+
+const cancelEditAttachmentName = () => {
+  editingAttachmentName.value = false
+  tempAttachmentName.value = ''
+}
+
+const saveAttachmentName = async () => {
+  if (!tempAttachmentName.value.trim()) {
+    ElMessage.warning('Attachment name cannot be empty')
+    return
+  }
+
+  try {
+    await resumeStore.updateProjectAttachmentName(formData.value.id, tempAttachmentName.value)
+    formData.value.attachment_name = tempAttachmentName.value
+    editingAttachmentName.value = false
+    ElMessage.success('Attachment name updated successfully')
+  } catch (error) {
+    ElMessage.error('Failed to update attachment name')
+  }
+}
+
 // Handle dialog close - added on 2025-12-22
 // Reason: Reset upload state when dialog closes
+// Modified on 2025-01-15: Also reset attachment name editing state
 const handleDialogClose = () => {
   // Reset file selection when dialog closes
   selectedFile.value = null
   if (uploadRef.value) {
     uploadRef.value.clearFiles()
   }
+  // Reset attachment name editing state - added on 2025-01-15
+  editingAttachmentName.value = false
+  tempAttachmentName.value = ''
 }
 
 // Updated save method with file upload support for both create and edit - modified on 2025-12-22
@@ -574,7 +612,8 @@ const handleDownload = async (url, fileName) => {
 
                 <!-- Show current attachment info for edit mode -->
                 <div v-if="isEditing && formData.attachment_name && !selectedFile" style="margin-top: 10px; padding: 10px; background-color: #f9f9f9; border-radius: 4px;">
-                  <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <!-- Normal display mode -->
+                  <div v-if="!editingAttachmentName" style="display: flex; align-items: center; justify-content: space-between;">
                     <div>
                       <el-icon><Document /></el-icon>
                       <span style="margin-left: 8px;">{{ formData.attachment_name }}</span>
@@ -595,9 +634,41 @@ const handleDownload = async (url, fileName) => {
                         (File missing)
                       </span>
                     </div>
-                    <el-button size="small" type="danger" @click="removeCurrentAttachment">
-                      Remove Current
-                    </el-button>
+                    <div>
+                      <!-- Edit name button - added on 2025-01-15 -->
+                      <!-- Reason: Allow editing attachment name without uploading new file -->
+                      <el-button size="small" @click="startEditAttachmentName" style="margin-right: 5px;">
+                        <el-icon><Edit /></el-icon>
+                        Edit Name
+                      </el-button>
+                      <el-button size="small" type="danger" @click="removeCurrentAttachment">
+                        Remove
+                      </el-button>
+                    </div>
+                  </div>
+                  <!-- Edit name mode - added on 2025-01-15 -->
+                  <!-- Reason: Inline editing for attachment name -->
+                  <div v-else style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="flex: 1; display: flex; align-items: center;">
+                      <el-icon><Document /></el-icon>
+                      <el-input
+                        v-model="tempAttachmentName"
+                        size="small"
+                        style="margin-left: 8px; max-width: 300px;"
+                        @keyup.enter="saveAttachmentName"
+                        @keyup.esc="cancelEditAttachmentName"
+                      />
+                    </div>
+                    <div>
+                      <el-button size="small" type="primary" @click="saveAttachmentName" style="margin-right: 5px;">
+                        <el-icon><Check /></el-icon>
+                        Save
+                      </el-button>
+                      <el-button size="small" @click="cancelEditAttachmentName">
+                        <el-icon><Close /></el-icon>
+                        Cancel
+                      </el-button>
+                    </div>
                   </div>
                 </div>
 
