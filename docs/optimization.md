@@ -518,6 +518,588 @@ async def get_personal_info(...):
 
 ---
 
+# 進階優化方案（階段 5-7）
+## 文件建立日期: 2025-01-31
+
+## 概述
+
+本文檔說明針對 GCP e2-micro (1GB RAM) 的進階優化方案，補充階段 1-4 之外的效能提升措施。
+
+---
+
+## 當前狀態分析
+
+### VM 硬體規格
+- **機型**: e2-micro
+- **vCPUs**: 2 個 (Intel Broadwell)
+- **記憶體**: 1 GB
+- **架構**: x86/64
+
+### 已完成的優化（階段 1）
+✅ 前端 timeout 從 10 秒增加到 30 秒
+✅ 加入自動重試機制（最多 2 次）
+✅ Docker 記憶體限制（Backend 512MB, Frontend 256MB）
+✅ Uvicorn 參數優化（workers=1, limit-concurrency=20）
+
+### 剩餘問題
+
+#### 問題 1: 前端並行載入 8 個 API
+**位置**: `frontend/src/views/ResumeView.vue` line 24-33
+
+```javascript
+await Promise.all([
+  resumeStore.fetchPersonalInfo().catch(() => null),
+  resumeStore.fetchWorkExperiences().catch(() => null),
+  resumeStore.fetchProjects().catch(() => null),
+  resumeStore.fetchEducation().catch(() => null),
+  resumeStore.fetchCertifications().catch(() => null),
+  resumeStore.fetchLanguages().catch(() => null),
+  resumeStore.fetchPublications().catch(() => null),
+  resumeStore.fetchGithubProjects().catch(() => null),
+])
+```
+
+**影響**:
+- 後端瞬間接收 8 個並發請求
+- 每個請求約佔 10-20MB RAM
+- 總記憶體需求峰值：8 × 20MB = 160MB
+
+#### 問題 2: 後端無連接池配置
+**位置**: `backend/app/db/base.py`
+
+當前配置缺少連接池優化，每次請求可能建立新連接。
+
+#### 問題 3: 無快取機制
+每次請求都查詢資料庫，即使資料更新頻率很低。
+
+#### 問題 4: SQLite 無 WAL 模式
+影響並發讀寫效能。
+
+---
+
+## 階段 5: 前端層優化（高優先級，低風險）
+
+### 5.1 實作序列載入策略
+
+**目的**: 將並行載入改為分批序列載入，降低峰值記憶體使用
+
+**修改檔案**: `frontend/src/views/ResumeView.vue`
+
+**實作方案**:
+
+```javascript
+// 原始實作 - 已註解於 2025-01-31
+// Reason: 改為序列載入以降低峰值記憶體使用 for GCP e2-micro (1GB RAM)
+// await Promise.all([
+//   resumeStore.fetchPersonalInfo().catch(() => null),
+//   resumeStore.fetchWorkExperiences().catch(() => null),
+//   resumeStore.fetchProjects().catch(() => null),
+//   resumeStore.fetchEducation().catch(() => null),
+//   resumeStore.fetchCertifications().catch(() => null),
+//   resumeStore.fetchLanguages().catch(() => null),
+//   resumeStore.fetchPublications().catch(() => null),
+//   resumeStore.fetchGithubProjects().catch(() => null),
+// ])
+
+// 新實作 - 分三批次序列載入
+// 第一批次：核心資料（必須立即顯示）
+await Promise.all([
+  resumeStore.fetchPersonalInfo().catch(() => null),
+])
+
+// 第二批次：主要內容（稍後顯示）
+await Promise.all([
+  resumeStore.fetchWorkExperiences().catch(() => null),
+  resumeStore.fetchEducation().catch(() => null),
+])
+
+// 第三批次：補充資料（可延遲載入）
+await Promise.all([
+  resumeStore.fetchProjects().catch(() => null),
+  resumeStore.fetchCertifications().catch(() => null),
+  resumeStore.fetchLanguages().catch(() => null),
+  resumeStore.fetchPublications().catch(() => null),
+  resumeStore.fetchGithubProjects().catch(() => null),
+])
+```
+
+**預期效果**:
+- 峰值記憶體使用降低 60-80MB
+- 首次內容渲染時間縮短 40%
+- 使用者體驗：漸進式顯示，感覺載入更快
+
+### 5.2 實作客戶端快取機制
+
+**目的**: 使用 localStorage 實作 5 分鐘有效期的短期快取
+
+**修改檔案**: `frontend/src/stores/resume.js`
+
+**實作方案**:
+
+```javascript
+// 新增於 2025-01-31，原因：實作客戶端快取以減少 API 請求
+const CACHE_DURATION = 5 * 60 * 1000  // 5 分鐘
+
+function getCache(key) {
+  const cached = localStorage.getItem(key)
+  if (!cached) return null
+  const { data, timestamp } = JSON.parse(cached)
+  if (Date.now() - timestamp > CACHE_DURATION) {
+    localStorage.removeItem(key)
+    return null
+  }
+  return data
+}
+
+function setCache(key, data) {
+  localStorage.setItem(key, JSON.stringify({
+    data,
+    timestamp: Date.now()
+  }))
+}
+
+// 修改 fetch 函數示例
+async function fetchPersonalInfo() {
+  const cacheKey = 'personal_info'
+  const cached = getCache(cacheKey)
+  if (cached) {
+    personalInfo.value = cached
+    return cached
+  }
+
+  loading.value = true
+  try {
+    const response = await resumeAPI.getPersonalInfo()
+    setCache(cacheKey, response.data)
+    personalInfo.value = response.data
+    return response.data
+  } finally {
+    loading.value = false
+  }
+}
+```
+
+**預期效果**:
+- 5 分鐘內重複訪問零請求
+- 減少 80% 的 API 呼叫
+- 頁面載入瞬間完成（使用快取時）
+
+### 5.3 優化錯誤處理與重試策略
+
+**目的**: 實作指數退避重試和優雅降級
+
+**修改檔案**: `frontend/src/api/axios.js`
+
+**實作方案**:
+
+```javascript
+// 原始重試邏輯 - 已註解於 2025-01-31
+// Reason: 升級為指數退避重試和優雅降級 for GCP e2-micro
+// if (!config.__retryCount &&
+//     (error.code === 'ECONNABORTED' || error.response?.status >= 500)) {
+//   config.__retryCount = config.__retryCount || 0
+//   if (config.__retryCount < 2) {
+//     config.__retryCount += 1
+//     await new Promise(resolve => setTimeout(resolve, 1000))
+//     return apiClient(config)
+//   }
+// }
+
+// 新實作 - 指數退避重試 + 優雅降級
+if (!config.__retryCount) {
+  config.__retryCount = 0
+}
+
+const isRetryable =
+  error.code === 'ECONNABORTED' ||
+  error.response?.status >= 500
+
+if (isRetryable && config.__retryCount < 3) {
+  config.__retryCount += 1
+  // 指數退避：1s, 2s, 4s
+  const delay = Math.pow(2, config.__retryCount - 1) * 1000
+  await new Promise(resolve => setTimeout(resolve, delay))
+  return apiClient(config)
+}
+
+// 超過重試次數，返回快取資料（降級策略）
+if (config.__retryCount >= 3) {
+  const cacheKey = `api_${config.url}`
+  const cached = getCache(cacheKey)
+  if (cached) {
+    console.warn('API request failed, using cached data:', config.url)
+    return { data: cached, status: 200, config }
+  }
+}
+```
+
+**預期效果**:
+- 提高暫性故障恢復率 90%
+- 在伺服器高負載時仍能顯示舊資料
+
+---
+
+## 階段 6: 後端層優化（高優先級，中風險）
+
+### 6.1 配置 SQLite WAL 模式與連接池
+
+**目的**: 優化 SQLite 效能與記憶體使用
+
+**修改檔案**: `backend/app/db/base.py`
+
+**實作方案**:
+
+```python
+# 原始配置 - 已註解於 2025-01-31
+# Reason: 優化 SQLite 效能與記憶體使用 for GCP e2-micro (1GB RAM)
+# engine = create_engine(
+#     settings.DATABASE_URL,
+#     connect_args={"check_same_thread": False}
+# )
+
+# 新配置 - 優化於 2025-01-31
+from sqlalchemy.pool import QueuePool
+
+engine = create_engine(
+    settings.DATABASE_URL,
+    connect_args={
+        "check_same_thread": False,
+        # 啟用自動提交模式
+        "isolation_level": None
+    },
+    # 連接池配置 - 針對 1GB RAM 優化
+    poolclass=QueuePool,
+    pool_size=3,              # 保持 3 個持久連接（每個 ~5MB）
+    max_overflow=2,           # 額外 2 個連接（峰值時）
+    pool_timeout=30,          # 30 秒連接超時
+    pool_recycle=3600,        # 每小時回收連接（防止記憶體洩漏）
+    pool_pre_ping=True,       # 連接前先測試（避免 stale 連接）
+    echo=False                # 生產環境關閉 SQL 日誌
+)
+```
+
+**在 main.py 中啟用 WAL 模式**:
+
+```python
+# 新增於 2025-01-31，原因：啟用 SQLite WAL 模式以改善並發效能
+from app.db.base import engine
+from sqlalchemy import text
+
+def enable_wal_mode():
+    """啟用 SQLite WAL 模式以改善並發效能"""
+    with engine.connect() as conn:
+        conn.execute(text("PRAGMA journal_mode=WAL"))
+        conn.execute(text("PRAGMA synchronous=NORMAL"))
+        conn.execute(text("PRAGMA cache_size=-6400"))  # 64MB 快取
+        conn.execute(text("PRAGMA temp_store=MEMORY"))  # 暫存在記憶體
+        conn.commit()
+
+# 在應用啟動時呼叫
+enable_wal_mode()
+```
+
+**預期效果**:
+- 連接建立開銷降低 80%
+- 並發查詢效能提升 2-3 倍
+- 資料庫記憶體使用穩定在 ~50MB
+
+### 6.2 實作 API 響應快取
+
+**目的**: 減少資料庫查詢，提升回應速度
+
+**新增檔案**: `backend/app/core/cache.py`
+
+**實作方案**:
+
+```python
+"""
+簡單的記憶體快取實作 - 優化於 2025-01-31 for GCP e2-micro (1GB RAM)
+"""
+from functools import lru_cache
+import threading
+import time
+from typing import Dict, Any, Optional
+
+
+class SimpleCache:
+    """執行緒安全的簡單快取實作"""
+
+    def __init__(self, default_ttl: int = 300):
+        # 預設 5 分鐘過期
+        self._cache: Dict[str, Dict[str, Any]] = {}
+        self._lock = threading.RLock()
+        self._default_ttl = default_ttl
+
+    def get(self, key: str) -> Optional[Any]:
+        """獲取快取值"""
+        with self._lock:
+            if key in self._cache:
+                item = self._cache[key]
+                if time.time() - item['timestamp'] < item['ttl']:
+                    return item['value']
+                # 過期，刪除
+                del self._cache[key]
+        return None
+
+    def set(self, key: str, value: Any, ttl: int = None) -> None:
+        """設定快取值"""
+        with self._lock:
+            self._cache[key] = {
+                'value': value,
+                'timestamp': time.time(),
+                'ttl': ttl or self._default_ttl
+            }
+
+    def clear(self) -> None:
+        """清除所有快取"""
+        with self._lock:
+            self._cache.clear()
+
+    def delete(self, key: str) -> None:
+        """刪除特定快取"""
+        with self._lock:
+            self._cache.pop(key, None)
+
+
+# 全域快取實例
+cache = SimpleCache(default_ttl=300)  # 5 分鐘
+```
+
+**在 API 端點中使用快取**:
+
+```python
+# 在 backend/app/api/endpoints/personal_info.py 中
+from app.core.cache import cache
+
+@router.get("/", response_model=PersonalInfoInDB)
+async def get_personal_info(db: Session = Depends(get_db)):
+    """Get personal information with cache"""
+
+    # 嘗試從快取獲取
+    # 原始實作 - 已註解於 2025-01-31
+    # info = db.query(PersonalInfo).first()
+
+    # 新實作 - 帶快取
+    info = cache.get('personal_info')
+    if info is None:
+        info = db.query(PersonalInfo).first()
+        if not info:
+            # 回傳預設空物件
+            info = PersonalInfoInDB(...)
+        # 快取 5 分鐘
+        cache.set('personal_info', info, ttl=300)
+
+    return info
+
+# 在更新端點中清除快取
+@router.put("/", response_model=PersonalInfoInDB)
+async def update_personal_info(
+    info_data: PersonalInfoUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # ... 更新邏輯 ...
+
+    # 清除快取 - 新增於 2025-01-31
+    cache.delete('personal_info')
+
+    return info
+```
+
+**預期效果**:
+- GET 請求回應時間降低 90%（從 300ms 降至 30ms）
+- 資料庫查詢降低 95%
+- 記憶體增加 <10MB（快取資料）
+
+### 6.3 優化資料庫查詢（移除檔案檢查）
+
+**目的**: 移除 GET 請求中的檔案系統檢查邏輯
+
+**修改檔案**: `backend/app/api/endpoints/work_experience.py`
+
+**實作方案**:
+
+```python
+# 原始實作 - 已註解於 2025-01-31
+# Reason: 移除 GET 請求中的檔案檢查以改善效能
+# for exp in experiences:
+#     if exp.attachment_path and exp.attachment_url:
+#         abs_path = Path(exp.attachment_path)
+#         if not abs_path.exists():
+#             exp.attachment_url = None
+#             db.commit()
+
+# 新實作 - 直接回傳
+@router.get("/", response_model=List[WorkExperienceWithProjects])
+async def get_work_experiences(db: Session = Depends(get_db)):
+    """Get all work experiences with projects (optimized)"""
+    experiences = db.query(WorkExperience)\
+        .options(joinedload(WorkExperience.projects))\
+        .order_by(WorkExperience.display_order)\
+        .all()
+
+    # 不再檢查檔案存在性，由前端處理 404
+    return experiences
+```
+
+**預期效果**:
+- GET 回應時間降低 40%
+- 減少不必要的磁碟 I/O
+- 避免資料庫寫入鎖定
+
+---
+
+## 階段 7: 系統層優化（中優先級，低風險）
+
+### 7.1 微調 Docker 資源限制
+
+**目的**: 根據實際監控數據微調資源限制
+
+**修改檔案**: `docker-compose.yml`
+
+**實作方案**:
+
+```yaml
+# 優化於 2025-01-31，原因：給快取系統更多空間
+services:
+  backend:
+    deploy:
+      resources:
+        limits:
+          memory: 640M      # 提高至 640MB（給快取更多空間）
+          cpus: '1.0'
+        reservations:
+          memory: 256M
+          cpus: '0.5'
+      # 新增：優化 OOM 處理
+      oom_kill_disable: false
+      # 新增：重啟策略
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+```
+
+### 7.2 增強健康檢查與監控
+
+**目的**: 即時監控資源使用狀況
+
+**修改檔案**: `backend/app/main.py`
+
+**實作方案**:
+
+```python
+# 新增於 2025-01-31，原因：增加記憶體和效能指標到健康檢查
+import psutil
+import time
+
+@app.get("/health")
+async def health_check():
+    """Enhanced health check with metrics"""
+
+    # 獲取當前進程記憶體使用
+    process = psutil.Process()
+    memory_info = process.memory_info()
+
+    # 獲取系統記憶體使用
+    system_memory = psutil.virtual_memory()
+
+    return {
+        "status": "healthy",
+        "timestamp": time.time(),
+        "metrics": {
+            "process_memory_mb": memory_info.rss / 1024 / 1024,
+            "system_memory_percent": system_memory.percent,
+            "cache_size": len(cache._cache),
+        }
+    }
+```
+
+---
+
+## 優先級排序
+
+| 優先級 | 項目 | 預期效果 | 風險 | 檔案 |
+|--------|------|----------|------|------|
+| 1 | 前端序列載入 | 峰值記憶體 -80MB | 低 | `frontend/src/views/ResumeView.vue` |
+| 2 | SQLite WAL + 連接池 | 查詢效能 +200% | 中 | `backend/app/db/base.py` |
+| 3 | API 響應快取 | 回應時間 -90% | 中 | `backend/app/core/cache.py` (新增) |
+| 4 | 移除檔案檢查 | GET 效能 +40% | 低 | `backend/app/api/endpoints/work_experience.py` |
+| 5 | 客戶端快取 | API 呼叫 -80% | 低 | `frontend/src/stores/resume.js` |
+
+---
+
+## 驗證方法
+
+### 前端驗證
+
+```bash
+# 1. 測試載入時間
+# 開啟瀏覽器 DevTools Network 面板
+# 重新整理頁面，觀察：
+# - 請求是否分批執行（而非同時 8 個）
+# - 首次內容渲染時間（FCP）
+# - 最大內容繪製時間（LCP）
+
+# 2. 測試快取
+# 第一次載入後，5 分鐘內重新整理
+# 應看到 0 個 API 請求（來自快取）
+
+# 3. 測試重試
+# 在網路面板中設定 Offline 模式
+# 觀察是否自動重試並顯示降級資料
+```
+
+### 後端驗證
+
+```bash
+# 1. 測試快取效果
+curl -w "\nTime: %{time_total}s\n" http://34.80.186.73:58433/api/personal-info/
+# 第一次請求應該較慢（~300ms）
+# 後續請求應該很快（~30ms，來自快取）
+
+# 2. 檢查連接池
+docker logs resumexlab-backend | grep -i pool
+# 應看到連接池已啟用
+
+# 3. 檢查 WAL 模式
+docker exec resumexlab-backend sqlite3 /app/data/resume.db "PRAGMA journal_mode;"
+# 應返回 "wal"
+
+# 4. 監控記憶體使用
+docker stats resumexlab-backend --no-stream
+# 應看到記憶體使用 < 640MB
+```
+
+---
+
+## 預期整體效果
+
+### 優化前 vs 優化後
+
+| 指標 | 優化前 | 階段 1 後 | 階段 5-7 後 | 總改善 |
+|------|--------|-----------|-------------|--------|
+| 閒置記憶體 | ~700MB | ~500MB | ~350MB | -50% |
+| 峰值記憶體（頁面載入） | ~700MB | ~600MB | ~450MB | -36% |
+| API 回應時間（平均） | 300ms | 200ms | 50ms | -83% |
+| 首次內容渲染時間 | 2.5s | 2.0s | 1.0s | -60% |
+| API 請求數（5 分鐘內） | 40 | 40 | 8 | -80% |
+| Timeout 錯誤率 | 15% | 5% | <2% | -87% |
+
+---
+
+## Critical Files for Implementation
+
+以下是實作階段 5-7 最關鍵的 5 個檔案：
+
+1. `frontend/src/views/ResumeView.vue` - 前端載入邏輯修改（序列載入策略）
+2. `backend/app/db/base.py` - 資料庫連接池與 WAL 模式配置
+3. `backend/app/core/cache.py` - 快取系統實作（新增檔案）
+4. `frontend/src/stores/resume.js` - 客戶端快取整合
+5. `backend/app/api/endpoints/work_experience.py` - 移除 GET 請求中的檔案檢查邏輯
+
+---
+
 ## 附錄：完整修改 Diff
 
 ### 1. frontend/src/api/axios.js

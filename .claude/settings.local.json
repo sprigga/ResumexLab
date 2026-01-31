@@ -19,7 +19,10 @@
       "Bash(git add:*)",
       "Bash(git push:*)",
       "Bash(git stash push:*)",
-      "Bash(docker-compose logs backend)"
+      "Bash(docker-compose logs backend)",
+      "Bash(ls:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker-compose restart:*)"
     ],
     "deny": [],
     "ask": []

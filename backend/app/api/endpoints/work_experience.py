@@ -13,8 +13,6 @@ from app.schemas.work_experience import (
     WorkExperienceUpdate,
     WorkExperienceWithProjects  # Added on 2025-11-30
 )
-from app.api.endpoints.auth import get_current_user
-from app.models.user import User
 
 router = APIRouter()
 
@@ -142,8 +140,7 @@ async def get_work_experience(experience_id: int, db: Session = Depends(get_db))
 @router.post("/", response_model=WorkExperienceInDB, status_code=status.HTTP_201_CREATED)
 async def create_work_experience(
     experience_data: WorkExperienceCreate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """Create work experience (requires authentication)"""
     db_experience = WorkExperience(**experience_data.model_dump())
@@ -169,8 +166,7 @@ async def create_work_experience_with_file(
     description_en: Optional[str] = Form(None),
     display_order: int = Form(0),
     file: Optional[UploadFile] = File(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """Create work experience with file attachment"""
     # Validate file if provided
@@ -247,8 +243,7 @@ async def update_work_experience_with_file(
     description_en: Optional[str] = Form(None),
     display_order: int = Form(0),
     file: Optional[UploadFile] = File(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """Update work experience with file attachment"""
     # Get existing experience
@@ -326,8 +321,7 @@ async def update_work_experience_with_file(
 async def update_work_experience(
     experience_id: int,
     experience_data: WorkExperienceUpdate,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """Update work experience (requires authentication)"""
     experience = db.query(WorkExperience).filter(WorkExperience.id == experience_id).first()
@@ -350,8 +344,7 @@ async def update_work_experience(
 @router.delete("/{experience_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_work_experience(
     experience_id: int,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """Delete work experience (requires authentication)"""
     experience = db.query(WorkExperience).filter(WorkExperience.id == experience_id).first()

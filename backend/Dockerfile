@@ -42,8 +42,18 @@ COPY . .
 # 建立資料庫目錄
 RUN mkdir -p /app/data
 
+# 設定 entrypoint 腳本權限
+# 添加於 2025-01-31
+# 說明: 容器啟動時自動執行 Alembic 遷移
+RUN chmod +x /app/entrypoint.sh
+
 # 暴露 API 端口
 EXPOSE 8000
+
+# 設定 entrypoint
+# 添加於 2025-01-31
+# 說明: 使用 entrypoint 腳本處理資料庫遷移
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 # 啟動應用
 # 使用 uvicorn 運行 FastAPI 應用

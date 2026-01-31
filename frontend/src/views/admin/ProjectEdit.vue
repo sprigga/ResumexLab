@@ -263,11 +263,17 @@ const createProjectWithFile = async () => {
   }
 
   const token = localStorage.getItem('token')
+  if (!token) {
+    throw new Error('Please login first')
+  }
+
+  const headers = {
+    'Authorization': `Bearer ${token}`
+  }
+
   const response = await fetch('/api/projects/upload', {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`
-    },
+    headers: headers,
     body: formDataToSend
   })
 
@@ -302,11 +308,17 @@ const updateProjectWithFile = async () => {
   // Note: Don't append id to FormData as it should be in URL path parameter
 
   const token = localStorage.getItem('token')
+  if (!token) {
+    throw new Error('Please login first')
+  }
+
+  const headers = {
+    'Authorization': `Bearer ${token}`
+  }
+
   const response = await fetch(`/api/projects/${formData.value.id}/upload`, {
     method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`
-    },
+    headers: headers,
     body: formDataToSend
   })
 

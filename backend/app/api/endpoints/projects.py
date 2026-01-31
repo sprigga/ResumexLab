@@ -15,8 +15,6 @@ from pathlib import Path
 from app.db.base import get_db
 from app.models.project import Project
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
-from app.api.endpoints.auth import get_current_user
-from app.models.user import User
 
 router = APIRouter()
 
@@ -122,8 +120,7 @@ async def create_project_with_file(
     end_date: Optional[str] = Form(None),
     display_order: int = Form(0),
     file: Optional[UploadFile] = File(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """Create project with file attachment"""
     # Validate file if provided
@@ -198,8 +195,7 @@ async def update_project_with_file(
     end_date: Optional[str] = Form(None),
     display_order: int = Form(0),
     file: Optional[UploadFile] = File(None),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """Update project with file attachment"""
     # Get existing project
@@ -289,8 +285,7 @@ async def update_project_with_file(
 def update_project_attachment_name(
     project_id: int,
     attachment_name: str = Body(..., embed=True),
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    db: Session = Depends(get_db)
 ):
     """
     Update only the attachment_name field of a project

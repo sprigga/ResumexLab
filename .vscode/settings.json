@@ -1,5 +1,5 @@
 {
-    "terminal.integrated.fontSize": 15,
+    "terminal.integrated.fontSize": 14,
     "workbench.editor.defaultBinaryEditor": "markdown-preview-enhanced",
     "claudeCodeChat.wsl.claudePath": "/home/ubuntu/.local/bin/claude-code",
     "claudeCodeChat.wsl.nodePath": "/home/linuxbrew/.linuxbrew/bin/node",
@@ -20,7 +20,7 @@
         "qwen"
     ],
     "markdown-preview-enhanced.plantumlServer": "https://www.plantuml.com/plantuml/svg/",
-    "claudeCode.useTerminal": false,
+    "claudeCode.useTerminal": true,
     "claudeCode.useCtrlEnterToSend": true,
     "inlineChat.enableV2": true,
     "claudeCode.environmentVariables": [
@@ -31,5 +31,9 @@
 
     ],
     "chat.useAgentSkills": true,
-    "editor.fontSize": 14
+    "editor.fontSize": 14,
+    "markdown.preview.fontSize": 14,
+    "debug.console.fontSize": 14,
+    "chat.editor.fontSize": 14,
+    "gemini-cli-vscode.claude.command": "glm"
 }
