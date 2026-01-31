@@ -39,8 +39,8 @@ RUN pip install --upgrade pip && \
 # 複製應用程式碼
 COPY . .
 
-# 建立資料庫目錄
-RUN mkdir -p /app/data
+# 建立資料庫目錄和上傳文件目錄
+RUN mkdir -p /app/data /app/uploads
 
 # 設定 entrypoint 腳本權限
 # 添加於 2025-01-31

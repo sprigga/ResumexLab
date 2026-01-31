@@ -46,6 +46,8 @@ services:
     volumes:
       # 掛載資料庫文件，確保數據持久化
       - ./backend/data:/app/data
+      # 掛載上傳文件目錄，確保上傳的文件持久化
+      - ./backend/uploads:/app/uploads
       # 開發模式下可選：掛載程式碼以支援熱重載
       # - ./backend/app:/app/app
     networks:
