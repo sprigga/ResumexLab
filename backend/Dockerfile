@@ -47,6 +47,17 @@ EXPOSE 8000
 
 # 啟動應用
 # 使用 uvicorn 運行 FastAPI 應用
-# 已修改於 2025-01-12，原因：增加 --limit-max-requests 以支援大檔案上傳（最大 200MB）
-# --timeout-keep-alive 300: 延長連線保持時間至 5 分鐘
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--timeout-keep-alive", "300"]
+# 優化於 2025-01-31，針對 GCP e2-micro (1GB RAM, 2 vCPU) 的資源限制
+# --workers 1: 單一 worker (每個 worker ~150MB RAM)
+# --timeout-keep-alive 60: 60 秒保持連線（降低記憶體佔用）
+# --limit-concurrency 20: 最多 20 個並發請求
+# --limit-max-requests 100: 每 100 個請求重啟 worker 釋放記憶體
+# --backlog 50: 限制等待佇列大小
+CMD ["uvicorn", "app.main:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8000", \
+     "--workers", "1", \
+     "--timeout-keep-alive", "60", \
+     "--limit-concurrency", "20", \
+     "--limit-max-requests", "100", \
+     "--backlog", "50"]

@@ -12,6 +12,15 @@ services:
       dockerfile: Dockerfile
     container_name: resumexlab-backend
     restart: unless-stopped
+    # 資源限制 - 優化於 2025-01-31 for GCP e2-micro (1GB RAM)
+    deploy:
+      resources:
+        limits:
+          memory: 512M      # 最大 512MB
+          cpus: '1.0'       # 最大 1 個 CPU
+        reservations:
+          memory: 256M      # 保證 256MB
+          cpus: '0.5'       # 保證 0.5 CPU
     ports:
       # 生產環境 (GCP VM): 使用自定義端口避免衝突
       # 修改日期: 2025-01-12 - 恢復為生產環境設定
@@ -55,6 +64,15 @@ services:
       dockerfile: Dockerfile
     container_name: resumexlab-frontend
     restart: unless-stopped
+    # 資源限制 - 優化於 2025-01-31 for GCP e2-micro (1GB RAM)
+    deploy:
+      resources:
+        limits:
+          memory: 256M      # 最大 256MB
+          cpus: '0.5'       # 最大 0.5 CPU
+        reservations:
+          memory: 128M      # 保證 128MB
+          cpus: '0.25'      # 保證 0.25 CPU
     ports:
       # 生產環境 (GCP VM): 使用自定義端口避免衝突
       # 修改日期: 2025-01-12 - 恢復為生產環境設定
