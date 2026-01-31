@@ -109,12 +109,22 @@ const handleSave = async () => {
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="Professional Summary (Chinese)">
-              <el-input v-model="formData.summary_zh" type="textarea" :rows="4" />
+              <el-input
+                v-model="formData.summary_zh"
+                type="textarea"
+                :rows="4"
+                :input-style="{ whiteSpace: 'pre-wrap' }"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="Professional Summary (English)">
-              <el-input v-model="formData.summary_en" type="textarea" :rows="4" />
+              <el-input
+                v-model="formData.summary_en"
+                type="textarea"
+                :rows="4"
+                :input-style="{ whiteSpace: 'pre-wrap' }"
+              />
             </el-form-item>
           </el-col>
         </el-row>
@@ -217,6 +227,7 @@ const handleSave = async () => {
   background-color: rgba(255, 255, 255, 0.1) !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
   color: rgba(255, 255, 255, 0.87) !important;
+  white-space: pre-wrap !important; /* Preserve line breaks and whitespace */
 }
 
 /* Input placeholder styling */
@@ -293,6 +304,10 @@ const handleSave = async () => {
     background-color: #ffffff !important;
     color: #606266 !important;
     border-color: #dcdfe6 !important;
+  }
+
+  :deep(.el-textarea__inner) {
+    white-space: pre-wrap !important; /* Preserve line breaks in light mode */
   }
 
   :deep(.el-input__inner::placeholder),

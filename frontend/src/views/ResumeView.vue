@@ -566,6 +566,7 @@ const formatFileSize = (bytes) => {
   line-height: 1.6;
   font-size: 16px;
   text-align: left;
+  white-space: pre-wrap; /* Preserve line breaks and whitespace */
 }
 
 .experience-item {
