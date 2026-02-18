@@ -205,3 +205,32 @@ def test_create_project_with_auth(client, auth_headers):
     data = response.json()
     assert "id" in data, f"Response body missing 'id': {data}"
     assert data["title_en"] == "My Project"
+
+
+# ── Expired token test ───────────────────────────────────────────────────────
+
+def test_expired_token_rejected(client, db_session):
+    """
+    A JWT that expired in the past must be rejected with 401.
+    This verifies the token validation logic in get_current_user.
+    """
+    from app.core.security import create_access_token, get_password_hash
+    from app.models.user import User
+    from datetime import timedelta
+
+    # Create user directly in test DB
+    user = User(username="expireduser", password_hash=get_password_hash("pw"), email="e@e.com")
+    db_session.add(user)
+    db_session.commit()
+
+    # Create an already-expired token (negative timedelta = expired immediately)
+    expired_token = create_access_token(
+        data={"sub": "expireduser"},
+        expires_delta=timedelta(seconds=-1)
+    )
+    headers = {"Authorization": f"Bearer {expired_token}"}
+
+    response = client.post("/api/education/", json={
+        "school_en": "Test", "display_order": 1
+    }, headers=headers)
+    assert response.status_code == 401, f"Expired token should be rejected, got {response.status_code}"
