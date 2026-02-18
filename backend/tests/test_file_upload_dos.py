@@ -6,21 +6,19 @@ before reading them into memory.
 MAX_DB_FILE_SIZE = 100MB (set in import_data.py)
 """
 import io
+import os
 import sqlite3
 import tempfile
-import os
+import shutil
+from pathlib import Path
+from unittest.mock import patch
 
 
 DB_IMPORT_URL = "/api/import/database/import/"
 
 
 def _make_minimal_sqlite_db() -> bytes:
-    """
-    Create a minimal valid SQLite database in memory and return its bytes.
-    Using a real SQLite file prevents the endpoint from corrupting the
-    on-disk resume.db with garbage bytes, which would break subsequent
-    pytest sessions (app/main.py calls create_all at import time).
-    """
+    """Create a valid (but empty) SQLite database file and return its bytes."""
     with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as tmp:
         tmp_path = tmp.name
     try:
@@ -29,13 +27,15 @@ def _make_minimal_sqlite_db() -> bytes:
         with open(tmp_path, "rb") as f:
             return f.read()
     finally:
-        os.unlink(tmp_path)
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
 
 
 def test_non_db_file_rejected(client):
     """
     A file that doesn't end in .db must be rejected with 400.
     This is checked BEFORE reading file content (fastest rejection).
+    No file is written to disk.
     """
     response = client.post(
         DB_IMPORT_URL,
@@ -50,7 +50,8 @@ def test_oversized_file_rejected(client):
     """
     A .db file larger than 100MB must be rejected with 413.
     Uses 101MB to definitely exceed the limit.
-    Note: generating 101MB in memory is intentional for this one-time verification.
+    The file.size header check catches this BEFORE reading the body.
+    No file is written to disk (rejected before I/O).
     """
     OVER_LIMIT = 101 * 1024 * 1024  # 101MB
     fake_content = b"x" * OVER_LIMIT
@@ -64,30 +65,53 @@ def test_oversized_file_rejected(client):
     )
 
 
-def test_small_db_file_passes_size_check(client):
+def test_small_db_file_passes_size_check(client, tmp_path, monkeypatch):
     """
-    A small valid .db file must pass the size check and must NOT be rejected with 413.
-    A genuine SQLite file is used so that if the endpoint writes it to disk, the
-    on-disk resume.db remains a valid SQLite file and does not break subsequent
-    pytest sessions.
-    The endpoint returns 200 on success or 500 on any DB validation error.
-    The critical assertion is that the 100MB size guard does NOT fire.
-    """
-    small_db_bytes = _make_minimal_sqlite_db()
+    A small valid .db file should pass the size check.
+    Uses a temp directory to prevent overwriting the real resume.db.
 
-    response = client.post(
-        DB_IMPORT_URL,
-        files={"file": ("small.db", io.BytesIO(small_db_bytes), "application/octet-stream")}
-    )
-    # The only forbidden response is 413 (Request Entity Too Large).
-    # A small valid SQLite file must never trigger the 100MB size limit.
-    assert response.status_code != 413, (
-        f"Small valid .db file should NOT hit the 100MB size limit, got {response.status_code}"
-    )
-    # 200: endpoint accepted and wrote the file successfully.
-    # 400: endpoint rejected for format reasons (unexpected but allowed).
-    # 500: DB validation step failed (acceptable — size check was not the cause).
-    assert response.status_code in (200, 400, 500), (
-        f"Unexpected status code for small valid .db file: "
-        f"{response.status_code}: {response.text}"
-    )
+    The endpoint hardcodes its DB path via Path(__file__) resolution,
+    so we monkeypatch the backend_dir calculation to point to tmp_path.
+    We also restore app.db.base engine after the test to prevent
+    global state pollution.
+    """
+    import app.db.base as db_base
+    import app.api.endpoints.import_data as import_module
+
+    # Save original engine/session so we can restore after this test
+    original_engine = db_base.engine
+    original_session_local = db_base.SessionLocal
+
+    # The endpoint calculates:
+    #   backend_dir = Path(__file__).parent.parent.parent.parent.resolve()
+    # where __file__ = backend/app/api/endpoints/import_data.py
+    # Going up 4 levels: endpoints -> api -> app -> backend
+    # So backend_dir = backend/
+    # Then: db_path = backend_dir / "data" / "resume.db"
+    #
+    # We monkeypatch __file__ on the module so that
+    # Path(fake_file).parent.parent.parent.parent.resolve() == tmp_path
+    # fake_file must be 4 directory levels deep inside tmp_path.
+    fake_file = str(tmp_path / "app" / "api" / "endpoints" / "import_data.py")
+    monkeypatch.setattr(import_module, "__file__", fake_file)
+
+    # Create the fake directory structure so the path resolution works
+    (tmp_path / "app" / "api" / "endpoints").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "data").mkdir(exist_ok=True)
+
+    try:
+        db_content = _make_minimal_sqlite_db()
+
+        response = client.post(
+            DB_IMPORT_URL,
+            files={"file": ("small.db", io.BytesIO(db_content), "application/octet-stream")}
+        )
+
+        # Must NOT be 413 (size limit exceeded)
+        assert response.status_code != 413, (
+            f"Small 1KB file should NOT hit the 100MB size limit, got {response.status_code}"
+        )
+    finally:
+        # Always restore the global engine to prevent test pollution
+        db_base.engine = original_engine
+        db_base.SessionLocal = original_session_local
