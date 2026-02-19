@@ -22,7 +22,10 @@ uv pip install -r requirements.txt
 
 ```bash
 cp .env.example .env
-# Edit .env and update SECRET_KEY
+# Edit .env and set the following required values:
+#   SECRET_KEY  - generate with: python -c "import secrets; print(secrets.token_urlsafe(32))"
+#   ADMIN_USERNAME - the admin login username
+#   ADMIN_PASSWORD - the admin login password (use a strong password in production)
 ```
 
 ### 4. Run the application
@@ -40,12 +43,18 @@ The API will be available at:
 - Swagger docs: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
-## Default Credentials
+## Admin Credentials
 
-- Username: `admin`
-- Password: `admin123`
+Admin credentials are **required** and have no defaults. The application will refuse to start if they are not set.
 
-**Important**: Change the default password in production!
+Set them in your `.env` file:
+
+```
+ADMIN_USERNAME="your-admin-username"
+ADMIN_PASSWORD="your-strong-password"
+```
+
+See `.env.example` for reference.
 
 ## API Endpoints
 
