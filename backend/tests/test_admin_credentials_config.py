@@ -5,6 +5,7 @@ Uses direct Settings() instantiation to avoid dependency on the module-level
 settings singleton, which requires env vars at import time.
 """
 import pytest
+from pydantic import ValidationError
 from app.core.config import Settings
 
 
@@ -36,7 +37,7 @@ def test_missing_admin_username_raises(monkeypatch):
     """Settings should raise ValidationError when ADMIN_USERNAME is missing."""
     monkeypatch.delenv("ADMIN_USERNAME", raising=False)
     monkeypatch.delenv("ADMIN_PASSWORD", raising=False)
-    with pytest.raises(Exception):  # pydantic ValidationError
+    with pytest.raises(ValidationError):
         # _env_file=None prevents loading from .env so only ADMIN_PASSWORD is supplied
         Settings(ADMIN_PASSWORD="somepass", _env_file=None)
 
@@ -45,6 +46,6 @@ def test_missing_admin_password_raises(monkeypatch):
     """Settings should raise ValidationError when ADMIN_PASSWORD is missing."""
     monkeypatch.delenv("ADMIN_USERNAME", raising=False)
     monkeypatch.delenv("ADMIN_PASSWORD", raising=False)
-    with pytest.raises(Exception):  # pydantic ValidationError
+    with pytest.raises(ValidationError):
         # _env_file=None prevents loading from .env so only ADMIN_USERNAME is supplied
         Settings(ADMIN_USERNAME="someuser", _env_file=None)
