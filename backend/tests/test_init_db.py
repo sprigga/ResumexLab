@@ -44,6 +44,9 @@ def test_init_db_uses_env_username(mem_db, monkeypatch):
 
     user = mem_db.query(User).filter(User.username == "envadmin").first()
     assert user is not None, "Admin user should be created with ADMIN_USERNAME from env"
+    from app.core.security import verify_password
+    assert verify_password("envpassword", user.password_hash), \
+        "password_hash must match ADMIN_PASSWORD from env"
 
 
 def test_init_db_does_not_create_hardcoded_admin(mem_db, monkeypatch):
