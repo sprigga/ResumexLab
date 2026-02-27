@@ -77,7 +77,7 @@ export function useCrudPanel({ defaultForm, fetch, create, update, delete: del, 
       ElMessage.success('Deleted successfully')
       await fetch()
     } catch (error) {
-      if (error !== 'cancel') {
+      if (error !== 'cancel' && error !== 'close') {
         ElMessage.error(`Failed to delete ${entityName}`)
       }
     } finally {
