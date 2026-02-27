@@ -1,112 +1,30 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { onMounted } from 'vue'
 import { useResumeStore } from '@/stores/resume'
+import { useCrudPanel } from '@/composables/useCrudPanel'
 
 const resumeStore = useResumeStore()
-const loading = ref(false)
-const dialogVisible = ref(false)
-const isEditing = ref(false)
-const formData = ref({
-  school_zh: '',
-  school_en: '',
-  degree_zh: '',
-  degree_en: '',
-  major_zh: '',
-  major_en: '',
-  start_date: '',
-  end_date: '',
-  description_zh: '',
-  description_en: '',
-  display_order: 0,
-})
 
-onMounted(async () => {
-  await loadEducation()
-})
-
-const loadEducation = async () => {
-  loading.value = true
-  try {
-    await resumeStore.fetchEducation()
-  } catch (error) {
-    ElMessage.error('Failed to load education')
-  } finally {
-    loading.value = false
-  }
-}
-
-const resetForm = () => {
-  formData.value = {
-    school_zh: '',
-    school_en: '',
-    degree_zh: '',
-    degree_en: '',
-    major_zh: '',
-    major_en: '',
-    start_date: '',
-    end_date: '',
-    description_zh: '',
-    description_en: '',
+const {
+  loading, dialogVisible, isEditing, formData,
+  loadData, handleAdd, handleEdit, handleSave, handleDelete,
+} = useCrudPanel({
+  defaultForm: {
+    school_zh: '', school_en: '',
+    degree_zh: '', degree_en: '',
+    major_zh: '', major_en: '',
+    start_date: '', end_date: '',
+    description_zh: '', description_en: '',
     display_order: 0,
-  }
-}
+  },
+  fetch: () => resumeStore.fetchEducation(),
+  create: (data) => resumeStore.createEducation(data),
+  update: (id, data) => resumeStore.updateEducation(id, data),
+  delete: (id) => resumeStore.deleteEducation(id),
+  entityName: 'Education',
+})
 
-const handleAdd = () => {
-  resetForm()
-  isEditing.value = false
-  dialogVisible.value = true
-}
-
-const handleEdit = (row) => {
-  formData.value = { ...row }
-  isEditing.value = true
-  dialogVisible.value = true
-}
-
-const handleSave = async () => {
-  loading.value = true
-  try {
-    if (isEditing.value) {
-      await resumeStore.updateEducation(formData.value.id, formData.value)
-      ElMessage.success('Education updated successfully')
-    } else {
-      await resumeStore.createEducation(formData.value)
-      ElMessage.success('Education created successfully')
-    }
-    dialogVisible.value = false
-    await loadEducation()
-  } catch (error) {
-    ElMessage.error('Failed to save education')
-  } finally {
-    loading.value = false
-  }
-}
-
-const handleDelete = async (id) => {
-  try {
-    await ElMessageBox.confirm(
-      'Are you sure to delete this education record?',
-      'Warning',
-      {
-        confirmButtonText: 'Confirm',
-        cancelButtonText: 'Cancel',
-        type: 'warning',
-      }
-    )
-
-    loading.value = true
-    await resumeStore.deleteEducation(id)
-    ElMessage.success('Deleted successfully')
-    await loadEducation()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('Failed to delete')
-    }
-  } finally {
-    loading.value = false
-  }
-}
+onMounted(loadData)
 </script>
 
 <template>

@@ -1,186 +1,63 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { onMounted } from 'vue'
 import { useResumeStore } from '@/stores/resume'
+import { useCrudPanel } from '@/composables/useCrudPanel'
 
 const resumeStore = useResumeStore()
-const loading = ref(false)
-const certDialogVisible = ref(false)
-const langDialogVisible = ref(false)
-const isEditingCert = ref(false)
-const isEditingLang = ref(false)
 
-const certFormData = ref({
-  name_zh: '',
-  name_en: '',
-  issuer: '',
-  issue_date: '',
-  certificate_number: '',
-  display_order: 0,
+// Certifications panel
+const {
+  loading,
+  dialogVisible: certDialogVisible,
+  isEditing: isEditingCert,
+  formData: certFormData,
+  loadData: loadCerts,
+  handleAdd: handleAddCert,
+  handleEdit: handleEditCert,
+  handleSave: handleSaveCert,
+  handleDelete: handleDeleteCert,
+} = useCrudPanel({
+  defaultForm: {
+    name_zh: '', name_en: '',
+    issuer: '', issue_date: '',
+    certificate_number: '',
+    display_order: 0,
+  },
+  fetch: () => resumeStore.fetchCertifications(),
+  create: (data) => resumeStore.createCertification(data),
+  update: (id, data) => resumeStore.updateCertification(id, data),
+  delete: (id) => resumeStore.deleteCertification(id),
+  entityName: 'Certification',
 })
 
-const langFormData = ref({
-  language_zh: '',
-  language_en: '',
-  proficiency_zh: '',
-  proficiency_en: '',
-  test_name: '',
-  score: '',
-  display_order: 0,
+// Languages panel
+const {
+  loading: langLoading,
+  dialogVisible: langDialogVisible,
+  isEditing: isEditingLang,
+  formData: langFormData,
+  loadData: loadLangs,
+  handleAdd: handleAddLang,
+  handleEdit: handleEditLang,
+  handleSave: handleSaveLang,
+  handleDelete: handleDeleteLang,
+} = useCrudPanel({
+  defaultForm: {
+    language_zh: '', language_en: '',
+    proficiency_zh: '', proficiency_en: '',
+    test_name: '', score: '',
+    display_order: 0,
+  },
+  fetch: () => resumeStore.fetchLanguages(),
+  create: (data) => resumeStore.createLanguage(data),
+  update: (id, data) => resumeStore.updateLanguage(id, data),
+  delete: (id) => resumeStore.deleteLanguage(id),
+  entityName: 'Language',
 })
 
 onMounted(async () => {
-  await loadData()
+  await Promise.all([loadCerts(), loadLangs()])
 })
-
-const loadData = async () => {
-  loading.value = true
-  try {
-    await Promise.all([
-      resumeStore.fetchCertifications(),
-      resumeStore.fetchLanguages(),
-    ])
-  } catch (error) {
-    ElMessage.error('Failed to load data')
-  } finally {
-    loading.value = false
-  }
-}
-
-const resetCertForm = () => {
-  certFormData.value = {
-    name_zh: '',
-    name_en: '',
-    issuer: '',
-    issue_date: '',
-    certificate_number: '',
-    display_order: 0,
-  }
-}
-
-const resetLangForm = () => {
-  langFormData.value = {
-    language_zh: '',
-    language_en: '',
-    proficiency_zh: '',
-    proficiency_en: '',
-    test_name: '',
-    score: '',
-    display_order: 0,
-  }
-}
-
-// Certification handlers
-const handleAddCert = () => {
-  resetCertForm()
-  isEditingCert.value = false
-  certDialogVisible.value = true
-}
-
-const handleEditCert = (row) => {
-  certFormData.value = { ...row }
-  isEditingCert.value = true
-  certDialogVisible.value = true
-}
-
-const handleSaveCert = async () => {
-  loading.value = true
-  try {
-    if (isEditingCert.value) {
-      await resumeStore.updateCertification(certFormData.value.id, certFormData.value)
-      ElMessage.success('Certification updated successfully')
-    } else {
-      await resumeStore.createCertification(certFormData.value)
-      ElMessage.success('Certification created successfully')
-    }
-    certDialogVisible.value = false
-    await resumeStore.fetchCertifications()
-  } catch (error) {
-    ElMessage.error('Failed to save certification')
-  } finally {
-    loading.value = false
-  }
-}
-
-const handleDeleteCert = async (id) => {
-  try {
-    await ElMessageBox.confirm(
-      'Are you sure to delete this certification?',
-      'Warning',
-      {
-        confirmButtonText: 'Confirm',
-        cancelButtonText: 'Cancel',
-        type: 'warning',
-      }
-    )
-
-    loading.value = true
-    await resumeStore.deleteCertification(id)
-    ElMessage.success('Deleted successfully')
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('Failed to delete')
-    }
-  } finally {
-    loading.value = false
-  }
-}
-
-// Language handlers
-const handleAddLang = () => {
-  resetLangForm()
-  isEditingLang.value = false
-  langDialogVisible.value = true
-}
-
-const handleEditLang = (row) => {
-  langFormData.value = { ...row }
-  isEditingLang.value = true
-  langDialogVisible.value = true
-}
-
-const handleSaveLang = async () => {
-  loading.value = true
-  try {
-    if (isEditingLang.value) {
-      await resumeStore.updateLanguage(langFormData.value.id, langFormData.value)
-      ElMessage.success('Language updated successfully')
-    } else {
-      await resumeStore.createLanguage(langFormData.value)
-      ElMessage.success('Language created successfully')
-    }
-    langDialogVisible.value = false
-    await resumeStore.fetchLanguages()
-  } catch (error) {
-    ElMessage.error('Failed to save language')
-  } finally {
-    loading.value = false
-  }
-}
-
-const handleDeleteLang = async (id) => {
-  try {
-    await ElMessageBox.confirm(
-      'Are you sure to delete this language?',
-      'Warning',
-      {
-        confirmButtonText: 'Confirm',
-        cancelButtonText: 'Cancel',
-        type: 'warning',
-      }
-    )
-
-    loading.value = true
-    await resumeStore.deleteLanguage(id)
-    ElMessage.success('Deleted successfully')
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('Failed to delete')
-    }
-  } finally {
-    loading.value = false
-  }
-}
 </script>
 
 <template>
@@ -217,7 +94,7 @@ const handleDeleteLang = async (id) => {
         <el-button type="primary" @click="handleAddLang">Add New</el-button>
       </div>
 
-      <el-card v-loading="loading">
+      <el-card v-loading="langLoading">
         <el-table :data="resumeStore.languages" stripe>
           <el-table-column prop="language_en" label="Language" width="150" />
           <el-table-column prop="proficiency_en" label="Proficiency" width="150" />
@@ -333,7 +210,7 @@ const handleDeleteLang = async (id) => {
 
       <template #footer>
         <el-button @click="langDialogVisible = false">Cancel</el-button>
-        <el-button type="primary" @click="handleSaveLang" :loading="loading">Save</el-button>
+        <el-button type="primary" @click="handleSaveLang" :loading="langLoading">Save</el-button>
       </template>
     </el-dialog>
   </div>
