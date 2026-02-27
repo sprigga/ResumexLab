@@ -5,13 +5,34 @@
 [![Vue 3](https://img.shields.io/badge/Vue-3.5-brightgreen.svg)](https://vuejs.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104-red.svg)](https://fastapi.tiangolo.com/)
 
-一個功能完整的全端履歷管理系統，採用 Vue 3 前端與 FastAPI 後端架構，支援中英文雙語切換、進階履歷管理功能，並提供 Docker 容器化部署。
+一個功能完整的全端履歷管理系統，採用 Vue 3 前端與 FastAPI 後端架構，支援中英文雙語切換、進階履歷管理功能，並提供 Docker 容器化部署。專案採用工廠模式和可組合函數模式，實現高度可維護的程式碼結構。
 
-A comprehensive full-stack resume management system with Vue 3 frontend and FastAPI backend, featuring bilingual support (Traditional Chinese/English), advanced resume management, and Docker containerization.
+A comprehensive full-stack resume management system with Vue 3 frontend and FastAPI backend, featuring bilingual support (Traditional Chinese/English), advanced resume management, and Docker containerization. The project utilizes factory patterns and composables for highly maintainable code architecture.
 
 ---
 
 ## 📋 專案概述 (Project Overview)
+
+### 架構亮點 (Architecture Highlights)
+
+**🔧 Generic CRUD Abstraction**
+- **Backend**: `create_crud_router()` factory generates complete CRUD endpoints from model/schema combinations
+- **Frontend**: `useCrudPanel()` composable encapsulates dialog/loading/form management (reduces component scripts from ~100 to ~15 lines)
+- **API**: `createCrudApi()` factory dynamically generates API methods from entity paths
+- **Store**: `crudFactory` provides reusable CRUD action creators
+
+**⚡ Performance Optimization**
+- Docker configuration optimized for GCP e2-micro (1GB RAM) with specific resource limits
+- Uvicorn worker recycling (every 100 requests) for memory management
+- Multi-stage Docker builds for minimal image sizes
+- Nginx reverse proxy with gzip compression and caching strategies
+
+**🔒 Security Hardening**
+- Environment-based admin credentials (no hardcoded defaults)
+- JWT authentication with 24-hour token expiry (HS256)
+- CORS properly configured for multiple origins
+- DOMPurify XSS protection for HTML content
+- bcrypt password hashing
 
 ### 功能特色 (Key Features)
 
@@ -36,11 +57,12 @@ A comprehensive full-stack resume management system with Vue 3 frontend and Fast
 - 💾 資料庫匯入 / 匯出 — SQLite 全庫備份與還原（HTTP API）
 
 **技術優勢 (Technical Highlights)**
-- 🐳 Docker 容器化 — 一鍵部署，隔離環境
-- 🔄 資料庫遷移 — Alembic 冪等遷移腳本（IF NOT EXISTS 防衝突）
+- 🐳 Docker 容器化 — 一鍵部署，隔離環境，資源限制優化
+- 🔄 資料庫遷移 — Alembic 冪等遷移腳本（IF NOT EXISTS 防衝突），entrypoint 自動執行
 - 📝 自動 API 文件 — Swagger UI (`/docs`) / ReDoc (`/redoc`)
-- 🛡️ 安全性 — JWT、bcrypt、CORS、XSS 防護、管理員憑證環境變數化
-- 📁 檔案附件系統 — 支援 PDF/Word/圖片上傳（100MB 上限）
+- 🛡️ 安全性 — JWT、bcrypt、CORS、XSS 防護、管理員憑證環境變數化（無硬編碼）
+- 📁 檔案附件系統 — 支援 PDF/Word/圖片上傳（100MB 上限），Nginx 代理配置
+- 🏗️ 程式碼架構 — 工廠模式 + 可組合函數，消除重複 CRUD 程式碼
 
 ---
 
@@ -113,6 +135,53 @@ A comprehensive full-stack resume management system with Vue 3 frontend and Fast
               └──────────────┘      └──────────────┘  └──────────────┘
 ```
 
+### 架構模式詳解 (Architecture Patterns)
+
+**Frontend Patterns:**
+
+```javascript
+// 1. useCrudPanel Composable - 減少元件腳本從 ~100 行到 ~15 行
+import { useCrudPanel } from '@/composables/useCrudPanel'
+
+const {
+  loading, dialogVisible, isEditing, formData,
+  loadData, handleAdd, handleEdit, handleSave, handleDelete,
+} = useCrudPanel({
+  defaultForm: { /* 預設表單值 */ },
+  fetch: () => store.fetchAll(),
+  create: (data) => store.create(data),
+  update: (id, data) => store.update(id, data),
+  delete: (id) => store.delete(id),
+  entityName: 'Education',
+})
+
+// 2. createCrudApi Factory - 從路徑動態生成 API 方法
+import { createCrudApi } from '@/api/createCrudApi'
+export const educationAPI = createCrudApi('education')
+// 自動產生: getAll(), get(id), create(data), update(id, data), delete(id)
+
+// 3. crudFactory Store Actions - 通用 CRUD 操作
+import { createEntityActions } from '@/stores/crudFactory'
+const { fetchAll, create, update, remove } = createEntityActions(items, loading, error, api)
+```
+
+**Backend Patterns:**
+
+```python
+# create_crud_router Factory - 從模型/架構生成完整 CRUD 端點
+from app.api.crud_base import create_crud_router
+
+router = create_crud_router(
+    model=Education,
+    create_schema=EducationCreate,
+    update_schema=EducationUpdate,
+    response_schema=EducationInDB,
+    not_found_detail="Education not found",
+    order_by_field="display_order",
+)
+# 自動產生: GET /, GET /{id}, POST /, PUT /{id}, DELETE /{id}
+```
+
 ---
 
 ## 🛠️ 技術堆疊 (Tech Stack)
@@ -176,24 +245,26 @@ resumexlab/
 │   │   ├── env.py
 │   │   └── script.py.mako
 │   ├── app/
-│   │   ├── api/endpoints/
-│   │   │   ├── auth.py               # 登入 / 登出 / Token 驗證
-│   │   │   ├── personal_info.py      # 個人資訊 CRUD
-│   │   │   ├── work_experience.py    # 工作經歷 CRUD + 附件上傳
-│   │   │   ├── projects.py           # 專案 CRUD + 附件管理
-│   │   │   ├── education.py          # 教育背景 CRUD
-│   │   │   ├── certifications.py     # 證照 CRUD
-│   │   │   ├── languages.py          # 語言能力 CRUD
-│   │   │   ├── publications.py       # 學術著作 CRUD
-│   │   │   ├── github_projects.py    # GitHub 專案 CRUD
-│   │   │   └── import_data.py        # 資料庫匯入 / 匯出
+│   │   ├── api/
+│   │   │   ├── endpoints/
+│   │   │   │   ├── auth.py               # 登入 / 登出 / Token 驗證
+│   │   │   │   ├── personal_info.py      # 個人資訊 CRUD
+│   │   │   │   ├── work_experience.py    # 工作經歷 CRUD + 附件上傳
+│   │   │   │   ├── projects.py           # 專案 CRUD + 附件管理
+│   │   │   │   ├── education.py          # 教育背景 CRUD
+│   │   │   │   ├── certifications.py     # 證照 CRUD
+│   │   │   │   ├── languages.py          # 語言能力 CRUD
+│   │   │   │   ├── publications.py       # 學術著作 CRUD
+│   │   │   │   ├── github_projects.py    # GitHub 專案 CRUD
+│   │   │   │   └── import_data.py        # 資料庫匯入 / 匯出
+│   │   │   └── crud_base.py              # CRUD Router 工廠函數
 │   │   ├── core/
-│   │   │   ├── config.py             # 設定（含 ADMIN_USERNAME/PASSWORD 必填）
-│   │   │   └── security.py           # JWT 生成 / 驗證 / bcrypt
-│   │   ├── crud/                     # CRUD 操作層
+│   │   │   ├── config.py                 # 設定（含 ADMIN_USERNAME/PASSWORD 必填）
+│   │   │   └── security.py               # JWT 生成 / 驗證 / bcrypt
+│   │   ├── crud/                         # CRUD 操作層
 │   │   ├── db/
-│   │   │   ├── base.py               # SQLAlchemy engine / session
-│   │   │   └── init_db.py            # 初始化管理員帳號
+│   │   │   ├── base.py                   # SQLAlchemy engine / session
+│   │   │   └── init_db.py                # 初始化管理員帳號
 │   │   ├── models/
 │   │   │   ├── user.py
 │   │   │   ├── personal_info.py
@@ -233,8 +304,11 @@ resumexlab/
 │   │   ├── api/
 │   │   │   ├── axios.js              # Axios 實例（JWT 攔截、自動重試）
 │   │   │   ├── auth.js               # 認證 API
+│   │   │   ├── createCrudApi.js      # API 工廠函數
 │   │   │   └── resume.js             # 履歷資料 API
 │   │   ├── assets/css/               # 全域樣式
+│   │   ├── composables/
+│   │   │   └── useCrudPanel.js       # CRUD 面板可組合函數
 │   │   ├── components/
 │   │   │   ├── APITestComponent.vue  # API 測試工具（開發用）
 │   │   │   └── HelloWorld.vue
@@ -246,6 +320,7 @@ resumexlab/
 │   │   │   └── index.js              # 路由定義（含 Navigation Guard）
 │   │   ├── stores/
 │   │   │   ├── auth.js               # 認證狀態（Pinia）
+│   │   │   ├── crudFactory.js        # CRUD Store 工廠函數
 │   │   │   └── resume.js             # 履歷資料狀態（Pinia）
 │   │   ├── views/
 │   │   │   ├── ResumeView.vue        # 公開履歷展示
@@ -674,6 +749,46 @@ npm run preview
 
 ---
 
+## 📈 近期改進 (Recent Improvements)
+
+### 程式碼簡化 (Code Simplification - 2026-02)
+
+**Frontend Refactoring:**
+- ✅ 新增 `useCrudPanel` composable — 將管理元件腳本從 ~100 行減少至 ~15 行
+- ✅ 新增 `createCrudApi` factory — 從實體路徑動態生成 API 方法
+- ✅ 新增 `crudFactory` store actions — 可重用的 CRUD 操作建立器
+
+**影響:**
+- 減少 ~30% 的管理元件程式碼
+- 統一 CRUD 操作行為
+- 更容易維護和測試
+
+### 安全性強化 (Security Hardening)
+
+**最近修復:**
+- ✅ 移除硬編碼的管理員憑證 — 改用環境變數 `ADMIN_USERNAME` / `ADMIN_PASSWORD`
+- ✅ JWT Token 24 小時有效期限
+- ✅ CORS 正確配置多個來源
+- ✅ DOMPurify XSS 防護
+
+### 部署優化 (Deployment Optimization)
+
+**Docker 優化:**
+- ✅ 針對 GCP e2-micro (1GB RAM) 資源限制優化
+- ✅ Uvicorn worker 每 100 個請求重啟以釋放記憶體
+- ✅ 多階段建置減少映像大小
+- ✅ Entrypoint 自動執行 Alembic 遷移
+
+**Nginx 配置:**
+- ✅ 100MB 檔案上傳支援
+- ✅ 300 秒逾時設定
+- ✅ Gzip 壓縮啟用
+- ✅ 靜態資源快取策略
+
+詳細文檔請參考 `docs/plans/2026-02-27-code-simplification-analysis.md`
+
+---
+
 ## 🚢 部署 (Deployment)
 
 ### Docker 生產部署
@@ -740,4 +855,6 @@ Issues & 功能請求: GitHub Issues
 
 ---
 
-**版本**: 1.0.0 | **最後更新**: 2026年2月 | **狀態**: Production Ready ✅
+**版本**: 1.0.0 | **最後更新**: 2026年2月27日 | **狀態**: Production Ready ✅
+
+**架構**: Factory Pattern + Composables | **程式碼減少**: ~30% (通過抽象化)
