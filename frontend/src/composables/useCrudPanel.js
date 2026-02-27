@@ -13,14 +13,16 @@ import { ElMessage, ElMessageBox } from 'element-plus'
  * @param {Function} config.delete      - (id) => Promise — delete item
  * @param {string}  config.entityName   - Human-readable name for messages (e.g. "Education")
  */
+const deepClone = (obj) => structuredClone(obj)
+
 export function useCrudPanel({ defaultForm, fetch, create, update, delete: del, entityName }) {
   const loading = ref(false)
   const dialogVisible = ref(false)
   const isEditing = ref(false)
-  const formData = ref({ ...defaultForm })
+  const formData = ref(deepClone(defaultForm))
 
   const resetForm = () => {
-    formData.value = { ...defaultForm }
+    formData.value = deepClone(defaultForm)
   }
 
   const loadData = async () => {
@@ -41,7 +43,7 @@ export function useCrudPanel({ defaultForm, fetch, create, update, delete: del, 
   }
 
   const handleEdit = (row) => {
-    formData.value = { ...row }
+    formData.value = deepClone(row)
     isEditing.value = true
     dialogVisible.value = true
   }
@@ -72,14 +74,16 @@ export function useCrudPanel({ defaultForm, fetch, create, update, delete: del, 
         'Warning',
         { confirmButtonText: 'Confirm', cancelButtonText: 'Cancel', type: 'warning' }
       )
-      loading.value = true
+    } catch {
+      return
+    }
+    loading.value = true
+    try {
       await del(id)
       ElMessage.success('Deleted successfully')
       await fetch()
-    } catch (error) {
-      if (error !== 'cancel' && error !== 'close') {
-        ElMessage.error(`Failed to delete ${entityName}`)
-      }
+    } catch {
+      ElMessage.error(`Failed to delete ${entityName}`)
     } finally {
       loading.value = false
     }
