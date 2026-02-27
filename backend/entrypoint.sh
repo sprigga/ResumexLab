@@ -13,7 +13,8 @@ sleep 1
 echo "=== Running Alembic Migrations ==="
 
 # Run alembic upgrade to head
-# The migration files include column existence checks to handle idempotent migrations
+# The migration file uses CREATE TABLE IF NOT EXISTS for idempotent migrations
+# This allows safe re-running even if tables already exist
 alembic upgrade head
 
 echo "=== Migration Complete ==="
