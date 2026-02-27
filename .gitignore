@@ -222,3 +222,4 @@ docs/GITHUB.md
 test_api.html
 test_api_connection.js
 test_db_import.py
+.worktrees/
