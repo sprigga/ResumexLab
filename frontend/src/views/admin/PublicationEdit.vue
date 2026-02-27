@@ -1,102 +1,27 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { onMounted } from 'vue'
 import { useResumeStore } from '@/stores/resume'
+import { useCrudPanel } from '@/composables/useCrudPanel'
 
 const resumeStore = useResumeStore()
-const loading = ref(false)
-const dialogVisible = ref(false)
-const isEditing = ref(false)
-const formData = ref({
-  title: '',
-  authors: '',
-  publication: '',
-  year: null,
-  pages: '',
-  display_order: 0,
-})
 
-onMounted(async () => {
-  await loadPublications()
-})
-
-const loadPublications = async () => {
-  loading.value = true
-  try {
-    await resumeStore.fetchPublications()
-  } catch (error) {
-    ElMessage.error('Failed to load publications')
-  } finally {
-    loading.value = false
-  }
-}
-
-const resetForm = () => {
-  formData.value = {
-    title: '',
-    authors: '',
-    publication: '',
-    year: null,
-    pages: '',
+const {
+  loading, dialogVisible, isEditing, formData,
+  loadData, handleAdd, handleEdit, handleSave, handleDelete,
+} = useCrudPanel({
+  defaultForm: {
+    title: '', authors: '', publication: '',
+    year: null, pages: '',
     display_order: 0,
-  }
-}
+  },
+  fetch: () => resumeStore.fetchPublications(),
+  create: (data) => resumeStore.createPublication(data),
+  update: (id, data) => resumeStore.updatePublication(id, data),
+  delete: (id) => resumeStore.deletePublication(id),
+  entityName: 'Publication',
+})
 
-const handleAdd = () => {
-  resetForm()
-  isEditing.value = false
-  dialogVisible.value = true
-}
-
-const handleEdit = (row) => {
-  formData.value = { ...row }
-  isEditing.value = true
-  dialogVisible.value = true
-}
-
-const handleSave = async () => {
-  loading.value = true
-  try {
-    if (isEditing.value) {
-      await resumeStore.updatePublication(formData.value.id, formData.value)
-      ElMessage.success('Publication updated successfully')
-    } else {
-      await resumeStore.createPublication(formData.value)
-      ElMessage.success('Publication created successfully')
-    }
-    dialogVisible.value = false
-    await loadPublications()
-  } catch (error) {
-    ElMessage.error('Failed to save publication')
-  } finally {
-    loading.value = false
-  }
-}
-
-const handleDelete = async (id) => {
-  try {
-    await ElMessageBox.confirm(
-      'Are you sure to delete this publication?',
-      'Warning',
-      {
-        confirmButtonText: 'Confirm',
-        cancelButtonText: 'Cancel',
-        type: 'warning',
-      }
-    )
-
-    loading.value = true
-    await resumeStore.deletePublication(id)
-    ElMessage.success('Deleted successfully')
-    await loadPublications()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('Failed to delete')
-    }
-  } finally {
-    loading.value = false
-  }
-}
+onMounted(loadData)
 </script>
 
 <template>

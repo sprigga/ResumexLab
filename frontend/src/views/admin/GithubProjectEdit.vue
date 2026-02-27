@@ -1,102 +1,28 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { onMounted } from 'vue'
 import { useResumeStore } from '@/stores/resume'
+import { useCrudPanel } from '@/composables/useCrudPanel'
 
 const resumeStore = useResumeStore()
-const loading = ref(false)
-const dialogVisible = ref(false)
-const isEditing = ref(false)
-const formData = ref({
-  name_zh: '',
-  name_en: '',
-  description_zh: '',
-  description_en: '',
-  url: '',
-  display_order: 0,
-})
 
-onMounted(async () => {
-  await loadGithubProjects()
-})
-
-const loadGithubProjects = async () => {
-  loading.value = true
-  try {
-    await resumeStore.fetchGithubProjects()
-  } catch (error) {
-    ElMessage.error('Failed to load GitHub projects')
-  } finally {
-    loading.value = false
-  }
-}
-
-const resetForm = () => {
-  formData.value = {
-    name_zh: '',
-    name_en: '',
-    description_zh: '',
-    description_en: '',
+const {
+  loading, dialogVisible, isEditing, formData,
+  loadData, handleAdd, handleEdit, handleSave, handleDelete,
+} = useCrudPanel({
+  defaultForm: {
+    name_zh: '', name_en: '',
+    description_zh: '', description_en: '',
     url: '',
     display_order: 0,
-  }
-}
+  },
+  fetch: () => resumeStore.fetchGithubProjects(),
+  create: (data) => resumeStore.createGithubProject(data),
+  update: (id, data) => resumeStore.updateGithubProject(id, data),
+  delete: (id) => resumeStore.deleteGithubProject(id),
+  entityName: 'GitHub project',
+})
 
-const handleAdd = () => {
-  resetForm()
-  isEditing.value = false
-  dialogVisible.value = true
-}
-
-const handleEdit = (row) => {
-  formData.value = { ...row }
-  isEditing.value = true
-  dialogVisible.value = true
-}
-
-const handleSave = async () => {
-  loading.value = true
-  try {
-    if (isEditing.value) {
-      await resumeStore.updateGithubProject(formData.value.id, formData.value)
-      ElMessage.success('GitHub project updated successfully')
-    } else {
-      await resumeStore.createGithubProject(formData.value)
-      ElMessage.success('GitHub project created successfully')
-    }
-    dialogVisible.value = false
-    await loadGithubProjects()
-  } catch (error) {
-    ElMessage.error('Failed to save GitHub project')
-  } finally {
-    loading.value = false
-  }
-}
-
-const handleDelete = async (id) => {
-  try {
-    await ElMessageBox.confirm(
-      'Are you sure to delete this GitHub project?',
-      'Warning',
-      {
-        confirmButtonText: 'Confirm',
-        cancelButtonText: 'Cancel',
-        type: 'warning',
-      }
-    )
-
-    loading.value = true
-    await resumeStore.deleteGithubProject(id)
-    ElMessage.success('Deleted successfully')
-    await loadGithubProjects()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('Failed to delete')
-    }
-  } finally {
-    loading.value = false
-  }
-}
+onMounted(loadData)
 </script>
 
 <template>
