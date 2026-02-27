@@ -94,7 +94,7 @@ onMounted(async () => {
         <el-button type="primary" @click="handleAddLang">Add New</el-button>
       </div>
 
-      <el-card v-loading="loading">
+      <el-card v-loading="langLoading">
         <el-table :data="resumeStore.languages" stripe>
           <el-table-column prop="language_en" label="Language" width="150" />
           <el-table-column prop="proficiency_en" label="Proficiency" width="150" />
@@ -210,7 +210,7 @@ onMounted(async () => {
 
       <template #footer>
         <el-button @click="langDialogVisible = false">Cancel</el-button>
-        <el-button type="primary" @click="handleSaveLang" :loading="loading">Save</el-button>
+        <el-button type="primary" @click="handleSaveLang" :loading="langLoading">Save</el-button>
       </template>
     </el-dialog>
   </div>
