@@ -1,191 +1,83 @@
 import apiClient from './axios'
+import { createCrudApi } from './createCrudApi'
+
+// Entity CRUD APIs generated via factory
+const workExperienceApi = createCrudApi('work-experience')
+const projectsApi = createCrudApi('projects')
+const educationApi = createCrudApi('education')
+const certificationsApi = createCrudApi('certifications')
+const languagesApi = createCrudApi('languages')
+const publicationsApi = createCrudApi('publications')
+const githubProjectsApi = createCrudApi('github-projects')
 
 export const resumeAPI = {
-  // Personal Info
-  // 已修改於 2025-11-29，原因：FastAPI 路由使用尾部斜線
-  getPersonalInfo() {
-    return apiClient.get('/personal-info/')
-  },
-
-  updatePersonalInfo(data) {
-    return apiClient.put('/personal-info/', data)
-  },
+  // Personal Info (custom: no list/delete)
+  getPersonalInfo: () => apiClient.get('/personal-info/'),
+  updatePersonalInfo: (data) => apiClient.put('/personal-info/', data),
 
   // Work Experience
-  getWorkExperiences() {
-    return apiClient.get('/work-experience/')
-  },
-
-  getWorkExperience(id) {
-    return apiClient.get(`/work-experience/${id}`)
-  },
-
-  createWorkExperience(data) {
-    return apiClient.post('/work-experience/', data)
-  },
-
-  updateWorkExperience(id, data) {
-    return apiClient.put(`/work-experience/${id}`, data)
-  },
-
-  deleteWorkExperience(id) {
-    return apiClient.delete(`/work-experience/${id}`)
-  },
+  getWorkExperiences: () => workExperienceApi.getAll(),
+  getWorkExperience: (id) => workExperienceApi.get(id),
+  createWorkExperience: (data) => workExperienceApi.create(data),
+  updateWorkExperience: (id, data) => workExperienceApi.update(id, data),
+  deleteWorkExperience: (id) => workExperienceApi.delete(id),
 
   // Projects
-  // 已新增於 2025-11-30，原因：新增專案管理功能
-  getProjects() {
-    return apiClient.get('/projects/')
-  },
-
-  getProject(id) {
-    return apiClient.get(`/projects/${id}`)
-  },
-
-  createProject(data) {
-    return apiClient.post('/projects/', data)
-  },
-
-  updateProject(id, data) {
-    return apiClient.put(`/projects/${id}`, data)
-  },
-
-  deleteProject(id) {
-    return apiClient.delete(`/projects/${id}`)
-  },
-
-  // Update project attachment name only - added on 2025-01-15
-  // Reason: Allow updating attachment display name without uploading a new file
-  updateProjectAttachmentName(id, attachmentName) {
-    // Use JSON instead of FormData for simpler API and better reliability
-    return apiClient.patch(`/projects/${id}/attachment-name`, { attachment_name: attachmentName })
-  },
+  getProjects: () => projectsApi.getAll(),
+  getProject: (id) => projectsApi.get(id),
+  createProject: (data) => projectsApi.create(data),
+  updateProject: (id, data) => projectsApi.update(id, data),
+  deleteProject: (id) => projectsApi.delete(id),
+  updateProjectAttachmentName: (id, attachmentName) =>
+    apiClient.patch(`/projects/${id}/attachment-name`, { attachment_name: attachmentName }),
 
   // Education
-  // 已新增於 2025-11-30，原因：新增教育背景管理功能
-  getEducation() {
-    return apiClient.get('/education/')
-  },
-
-  createEducation(data) {
-    return apiClient.post('/education/', data)
-  },
-
-  updateEducation(id, data) {
-    return apiClient.put(`/education/${id}`, data)
-  },
-
-  deleteEducation(id) {
-    return apiClient.delete(`/education/${id}`)
-  },
+  getEducation: () => educationApi.getAll(),
+  createEducation: (data) => educationApi.create(data),
+  updateEducation: (id, data) => educationApi.update(id, data),
+  deleteEducation: (id) => educationApi.delete(id),
 
   // Certifications
-  // 已新增於 2025-11-30，原因：新增證照管理功能
-  getCertifications() {
-    return apiClient.get('/certifications/')
-  },
-
-  createCertification(data) {
-    return apiClient.post('/certifications/', data)
-  },
-
-  updateCertification(id, data) {
-    return apiClient.put(`/certifications/${id}`, data)
-  },
-
-  deleteCertification(id) {
-    return apiClient.delete(`/certifications/${id}`)
-  },
+  getCertifications: () => certificationsApi.getAll(),
+  createCertification: (data) => certificationsApi.create(data),
+  updateCertification: (id, data) => certificationsApi.update(id, data),
+  deleteCertification: (id) => certificationsApi.delete(id),
 
   // Languages
-  // 已新增於 2025-11-30，原因：新增語言能力管理功能
-  getLanguages() {
-    return apiClient.get('/languages/')
-  },
-
-  createLanguage(data) {
-    return apiClient.post('/languages/', data)
-  },
-
-  updateLanguage(id, data) {
-    return apiClient.put(`/languages/${id}`, data)
-  },
-
-  deleteLanguage(id) {
-    return apiClient.delete(`/languages/${id}`)
-  },
+  getLanguages: () => languagesApi.getAll(),
+  createLanguage: (data) => languagesApi.create(data),
+  updateLanguage: (id, data) => languagesApi.update(id, data),
+  deleteLanguage: (id) => languagesApi.delete(id),
 
   // Publications
-  // 已新增於 2025-11-30，原因：新增學術著作管理功能
-  getPublications() {
-    return apiClient.get('/publications/')
-  },
-
-  createPublication(data) {
-    return apiClient.post('/publications/', data)
-  },
-
-  updatePublication(id, data) {
-    return apiClient.put(`/publications/${id}`, data)
-  },
-
-  deletePublication(id) {
-    return apiClient.delete(`/publications/${id}`)
-  },
+  getPublications: () => publicationsApi.getAll(),
+  createPublication: (data) => publicationsApi.create(data),
+  updatePublication: (id, data) => publicationsApi.update(id, data),
+  deletePublication: (id) => publicationsApi.delete(id),
 
   // GitHub Projects
-  // 已新增於 2025-11-30，原因：新增 GitHub 專案管理功能
-  getGithubProjects() {
-    return apiClient.get('/github-projects/')
-  },
+  getGithubProjects: () => githubProjectsApi.getAll(),
+  createGithubProject: (data) => githubProjectsApi.create(data),
+  updateGithubProject: (id, data) => githubProjectsApi.update(id, data),
+  deleteGithubProject: (id) => githubProjectsApi.delete(id),
 
-  createGithubProject(data) {
-    return apiClient.post('/github-projects/', data)
-  },
-
-  updateGithubProject(id, data) {
-    return apiClient.put(`/github-projects/${id}`, data)
-  },
-
-  deleteGithubProject(id) {
-    return apiClient.delete(`/github-projects/${id}`)
-  },
-
-  // Import Data - 已新增於 2025-11-30，原因：新增匯入履歷資料功能
+  // Import / Export (special: FormData or blob responses)
   importPdf(file, importType = 'pdf_extraction') {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('import_type', importType)
     return apiClient.post('/import/pdf/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+      headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
-
-  importResumeData() {
-    return apiClient.post('/import/resume-data/')
-  },
-
-  createDatabase() {
-    return apiClient.post('/import/database/')
-  },
-
-  // 已新增於 2025-11-30，原因：新增資料庫匯出功能以方便遷移主機
-  exportDatabase() {
-    return apiClient.get('/import/database/export/', {
-      responseType: 'blob'
-    })
-  },
-
-  // 已新增於 2025-11-30，原因：新增資料庫匯入功能以方便遷移主機
+  importResumeData: () => apiClient.post('/import/resume-data/'),
+  createDatabase: () => apiClient.post('/import/database/'),
+  exportDatabase: () => apiClient.get('/import/database/export/', { responseType: 'blob' }),
   importDatabase(file) {
     const formData = new FormData()
     formData.append('file', file)
     return apiClient.post('/import/database/import/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+      headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
 }

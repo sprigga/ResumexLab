@@ -1,11 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import { resumeAPI } from '@/api/resume'
+import { createEntityActions, createAsyncAction } from './crudFactory'
 
 export const useResumeStore = defineStore('resume', () => {
+  // State
   const personalInfo = ref(null)
   const workExperiences = ref([])
-  // 已新增於 2025-11-30，原因：新增各類履歷資料的狀態管理
   const projects = ref([])
   const education = ref([])
   const certifications = ref([])
@@ -15,6 +16,7 @@ export const useResumeStore = defineStore('resume', () => {
   const loading = ref(false)
   const error = ref(null)
 
+  // Personal Info (custom: no list, special update pattern)
   async function fetchPersonalInfo() {
     loading.value = true
     error.value = null
@@ -45,133 +47,57 @@ export const useResumeStore = defineStore('resume', () => {
     }
   }
 
-  async function fetchWorkExperiences() {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.getWorkExperiences()
-      workExperiences.value = response.data
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
+  // Entity CRUD actions generated via factory
+  const weActions = createEntityActions(workExperiences, loading, error, {
+    getAll: resumeAPI.getWorkExperiences,
+    create: resumeAPI.createWorkExperience,
+    update: resumeAPI.updateWorkExperience,
+    delete: resumeAPI.deleteWorkExperience,
+  })
 
-  async function createWorkExperience(data) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.createWorkExperience(data)
-      workExperiences.value.push(response.data)
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
+  const projActions = createEntityActions(projects, loading, error, {
+    getAll: resumeAPI.getProjects,
+    create: resumeAPI.createProject,
+    update: resumeAPI.updateProject,
+    delete: resumeAPI.deleteProject,
+  })
 
-  async function updateWorkExperience(id, data) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.updateWorkExperience(id, data)
-      const index = workExperiences.value.findIndex(exp => exp.id === id)
-      if (index !== -1) {
-        workExperiences.value[index] = response.data
-      }
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
+  const eduActions = createEntityActions(education, loading, error, {
+    getAll: resumeAPI.getEducation,
+    create: resumeAPI.createEducation,
+    update: resumeAPI.updateEducation,
+    delete: resumeAPI.deleteEducation,
+  })
 
-  async function deleteWorkExperience(id) {
-    loading.value = true
-    error.value = null
-    try {
-      await resumeAPI.deleteWorkExperience(id)
-      workExperiences.value = workExperiences.value.filter(exp => exp.id !== id)
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
+  const certActions = createEntityActions(certifications, loading, error, {
+    getAll: resumeAPI.getCertifications,
+    create: resumeAPI.createCertification,
+    update: resumeAPI.updateCertification,
+    delete: resumeAPI.deleteCertification,
+  })
 
-  // Projects - 已新增於 2025-11-30
-  async function fetchProjects() {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.getProjects()
-      projects.value = response.data
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
+  const langActions = createEntityActions(languages, loading, error, {
+    getAll: resumeAPI.getLanguages,
+    create: resumeAPI.createLanguage,
+    update: resumeAPI.updateLanguage,
+    delete: resumeAPI.deleteLanguage,
+  })
 
-  async function createProject(data) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.createProject(data)
-      projects.value.push(response.data)
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
+  const pubActions = createEntityActions(publications, loading, error, {
+    getAll: resumeAPI.getPublications,
+    create: resumeAPI.createPublication,
+    update: resumeAPI.updatePublication,
+    delete: resumeAPI.deletePublication,
+  })
 
-  async function updateProject(id, data) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.updateProject(id, data)
-      const index = projects.value.findIndex(p => p.id === id)
-      if (index !== -1) {
-        projects.value[index] = response.data
-      }
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
+  const ghActions = createEntityActions(githubProjects, loading, error, {
+    getAll: resumeAPI.getGithubProjects,
+    create: resumeAPI.createGithubProject,
+    update: resumeAPI.updateGithubProject,
+    delete: resumeAPI.deleteGithubProject,
+  })
 
-  async function deleteProject(id) {
-    loading.value = true
-    error.value = null
-    try {
-      await resumeAPI.deleteProject(id)
-      projects.value = projects.value.filter(p => p.id !== id)
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // Update project attachment name only - added on 2025-01-15
-  // Reason: Allow updating attachment display name without uploading a new file
+  // Project attachment name (special PATCH operation)
   async function updateProjectAttachmentName(id, attachmentName) {
     loading.value = true
     error.value = null
@@ -190,371 +116,16 @@ export const useResumeStore = defineStore('resume', () => {
     }
   }
 
-  // Education - 已新增於 2025-11-30
-  async function fetchEducation() {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.getEducation()
-      education.value = response.data
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function createEducation(data) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.createEducation(data)
-      education.value.push(response.data)
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function updateEducation(id, data) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.updateEducation(id, data)
-      const index = education.value.findIndex(e => e.id === id)
-      if (index !== -1) {
-        education.value[index] = response.data
-      }
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function deleteEducation(id) {
-    loading.value = true
-    error.value = null
-    try {
-      await resumeAPI.deleteEducation(id)
-      education.value = education.value.filter(e => e.id !== id)
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // Certifications - 已新增於 2025-11-30
-  async function fetchCertifications() {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.getCertifications()
-      certifications.value = response.data
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function createCertification(data) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.createCertification(data)
-      certifications.value.push(response.data)
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function updateCertification(id, data) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.updateCertification(id, data)
-      const index = certifications.value.findIndex(c => c.id === id)
-      if (index !== -1) {
-        certifications.value[index] = response.data
-      }
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function deleteCertification(id) {
-    loading.value = true
-    error.value = null
-    try {
-      await resumeAPI.deleteCertification(id)
-      certifications.value = certifications.value.filter(c => c.id !== id)
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // Languages - 已新增於 2025-11-30
-  async function fetchLanguages() {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.getLanguages()
-      languages.value = response.data
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function createLanguage(data) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.createLanguage(data)
-      languages.value.push(response.data)
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function updateLanguage(id, data) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.updateLanguage(id, data)
-      const index = languages.value.findIndex(l => l.id === id)
-      if (index !== -1) {
-        languages.value[index] = response.data
-      }
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function deleteLanguage(id) {
-    loading.value = true
-    error.value = null
-    try {
-      await resumeAPI.deleteLanguage(id)
-      languages.value = languages.value.filter(l => l.id !== id)
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // Publications - 已新增於 2025-11-30
-  async function fetchPublications() {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.getPublications()
-      publications.value = response.data
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function createPublication(data) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.createPublication(data)
-      publications.value.push(response.data)
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function updatePublication(id, data) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.updatePublication(id, data)
-      const index = publications.value.findIndex(p => p.id === id)
-      if (index !== -1) {
-        publications.value[index] = response.data
-      }
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function deletePublication(id) {
-    loading.value = true
-    error.value = null
-    try {
-      await resumeAPI.deletePublication(id)
-      publications.value = publications.value.filter(p => p.id !== id)
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // GitHub Projects - 已新增於 2025-11-30
-  async function fetchGithubProjects() {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.getGithubProjects()
-      githubProjects.value = response.data
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function createGithubProject(data) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.createGithubProject(data)
-      githubProjects.value.push(response.data)
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function updateGithubProject(id, data) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.updateGithubProject(id, data)
-      const index = githubProjects.value.findIndex(g => g.id === id)
-      if (index !== -1) {
-        githubProjects.value[index] = response.data
-      }
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function deleteGithubProject(id) {
-    loading.value = true
-    error.value = null
-    try {
-      await resumeAPI.deleteGithubProject(id)
-      githubProjects.value = githubProjects.value.filter(g => g.id !== id)
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // Import Data functions - 已新增於 2025-11-30
-  async function importPdf(file, importType = 'pdf_extraction') {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.importPdf(file, importType)
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function importResumeData() {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.importResumeData()
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  async function createDatabase() {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.createDatabase()
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
-
-  // 已新增於 2025-11-30，原因：新增資料庫匯出功能以方便遷移主機
+  // Import/Export actions (one-off, no list management)
+  const importPdf = createAsyncAction(loading, error, resumeAPI.importPdf.bind(resumeAPI))
+  const importResumeData = createAsyncAction(loading, error, resumeAPI.importResumeData)
+  const createDatabase = createAsyncAction(loading, error, resumeAPI.createDatabase)
+  // exportDatabase returns the full response (blob), not response.data
   async function exportDatabase() {
     loading.value = true
     error.value = null
     try {
-      const response = await resumeAPI.exportDatabase()
-      return response
+      return await resumeAPI.exportDatabase()
     } catch (err) {
       error.value = err.message
       throw err
@@ -562,23 +133,10 @@ export const useResumeStore = defineStore('resume', () => {
       loading.value = false
     }
   }
-
-  // 已新增於 2025-11-30，原因：新增資料庫匯入功能以方便遷移主機
-  async function importDatabase(file) {
-    loading.value = true
-    error.value = null
-    try {
-      const response = await resumeAPI.importDatabase(file)
-      return response.data
-    } catch (err) {
-      error.value = err.message
-      throw err
-    } finally {
-      loading.value = false
-    }
-  }
+  const importDatabase = createAsyncAction(loading, error, resumeAPI.importDatabase.bind(resumeAPI))
 
   return {
+    // State
     personalInfo,
     workExperiences,
     projects,
@@ -589,37 +147,55 @@ export const useResumeStore = defineStore('resume', () => {
     githubProjects,
     loading,
     error,
+
+    // Personal Info
     fetchPersonalInfo,
     updatePersonalInfo,
-    fetchWorkExperiences,
-    createWorkExperience,
-    updateWorkExperience,
-    deleteWorkExperience,
-    fetchProjects,
-    createProject,
-    updateProject,
-    deleteProject,
+
+    // Work Experience (named aliases for backward compatibility)
+    fetchWorkExperiences: weActions.fetchAll,
+    createWorkExperience: weActions.create,
+    updateWorkExperience: weActions.update,
+    deleteWorkExperience: weActions.remove,
+
+    // Projects
+    fetchProjects: projActions.fetchAll,
+    createProject: projActions.create,
+    updateProject: projActions.update,
+    deleteProject: projActions.remove,
     updateProjectAttachmentName,
-    fetchEducation,
-    createEducation,
-    updateEducation,
-    deleteEducation,
-    fetchCertifications,
-    createCertification,
-    updateCertification,
-    deleteCertification,
-    fetchLanguages,
-    createLanguage,
-    updateLanguage,
-    deleteLanguage,
-    fetchPublications,
-    createPublication,
-    updatePublication,
-    deletePublication,
-    fetchGithubProjects,
-    createGithubProject,
-    updateGithubProject,
-    deleteGithubProject,
+
+    // Education
+    fetchEducation: eduActions.fetchAll,
+    createEducation: eduActions.create,
+    updateEducation: eduActions.update,
+    deleteEducation: eduActions.remove,
+
+    // Certifications
+    fetchCertifications: certActions.fetchAll,
+    createCertification: certActions.create,
+    updateCertification: certActions.update,
+    deleteCertification: certActions.remove,
+
+    // Languages
+    fetchLanguages: langActions.fetchAll,
+    createLanguage: langActions.create,
+    updateLanguage: langActions.update,
+    deleteLanguage: langActions.remove,
+
+    // Publications
+    fetchPublications: pubActions.fetchAll,
+    createPublication: pubActions.create,
+    updatePublication: pubActions.update,
+    deletePublication: pubActions.remove,
+
+    // GitHub Projects
+    fetchGithubProjects: ghActions.fetchAll,
+    createGithubProject: ghActions.create,
+    updateGithubProject: ghActions.update,
+    deleteGithubProject: ghActions.remove,
+
+    // Import/Export
     importPdf,
     importResumeData,
     createDatabase,
