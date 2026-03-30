@@ -7,49 +7,18 @@ Date: 2025-11-30
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile, Form, Body
 from sqlalchemy.orm import Session
-import os
-import uuid
-from datetime import datetime, date
-from pathlib import Path
 
 from app.db.base import get_db
 from app.models.project import Project
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
+from app.api.upload_utils import (
+    validate_file,
+    parse_date_string,
+    save_upload_file,
+    delete_upload_file,
+)
 
 router = APIRouter()
-
-# File upload configuration - added on 2025-12-22
-# Reason: Configure upload directory and allowed file types for projects
-# 已修改於 2025-01-12，原因：將檔案大小限制從 10MB 提高到 100MB
-UPLOAD_DIR = Path("uploads")
-ALLOWED_EXTENSIONS = {".pdf", ".doc", ".docx", ".txt", ".jpg", ".jpeg", ".png"}
-MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
-
-def ensure_upload_dir():
-    """Create upload directory if it doesn't exist"""
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-def validate_file(file: UploadFile) -> bool:
-    """Validate file type and size"""
-    # Check file extension
-    file_extension = os.path.splitext(file.filename)[1].lower()
-    if file_extension not in ALLOWED_EXTENSIONS:
-        return False
-
-    # Check file size
-    if hasattr(file, 'size') and file.size > MAX_FILE_SIZE:
-        return False
-
-    return True
-
-def parse_date_string(date_str: Optional[str]) -> Optional[date]:
-    """Parse date string to Python date object"""
-    if not date_str:
-        return None
-    try:
-        return datetime.strptime(date_str, "%Y-%m-%d").date()
-    except ValueError:
-        return None
 
 @router.get("/", response_model=List[ProjectResponse])
 def get_projects(db: Session = Depends(get_db)):
@@ -70,7 +39,7 @@ def get_project(project_id: int, db: Session = Depends(get_db)):
 @router.post("/", response_model=ProjectResponse)
 def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
     """Create a new project"""
-    db_project = Project(**project.dict())
+    db_project = Project(**project.model_dump())
     db.add(db_project)
     db.commit()
     db.refresh(db_project)
@@ -84,7 +53,7 @@ def update_project(project_id: int, project: ProjectUpdate, db: Session = Depend
     if not db_project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    for key, value in project.dict(exclude_unset=True).items():
+    for key, value in project.model_dump(exclude_unset=True).items():
         setattr(db_project, key, value)
 
     db.commit()
@@ -149,26 +118,7 @@ async def create_project_with_file(
 
     # Handle file upload
     if file and file.filename:
-        ensure_upload_dir()
-
-        # Generate unique filename
-        file_extension = os.path.splitext(file.filename)[1]
-        unique_filename = f"{uuid.uuid4()}{file_extension}"
-        file_path = UPLOAD_DIR / unique_filename
-
-        # Save file
-        file_content = await file.read()
-        with open(file_path, "wb") as buffer:
-            buffer.write(file_content)
-
-        # Add file info to project data
-        project_data.update({
-            "attachment_name": file.filename,
-            "attachment_path": str(file_path),
-            "attachment_size": len(file_content),
-            "attachment_type": file.content_type,
-            "attachment_url": f"/uploads/{unique_filename}"
-        })
+        project_data.update(await save_upload_file(file))
 
     # Create project
     db_project = Project(**project_data)
@@ -232,33 +182,8 @@ async def update_project_with_file(
 
     # Handle file upload
     if file and file.filename:
-        ensure_upload_dir()
-
-        # Delete old file if exists
-        if project.attachment_path and os.path.exists(project.attachment_path):
-            try:
-                os.remove(project.attachment_path)
-            except OSError:
-                pass
-
-        # Generate unique filename
-        file_extension = os.path.splitext(file.filename)[1]
-        unique_filename = f"{uuid.uuid4()}{file_extension}"
-        file_path = UPLOAD_DIR / unique_filename
-
-        # Save file
-        file_content = await file.read()
-        with open(file_path, "wb") as buffer:
-            buffer.write(file_content)
-
-        # Add file info to project data
-        project_data.update({
-            "attachment_name": file.filename,
-            "attachment_path": str(file_path),
-            "attachment_size": len(file_content),
-            "attachment_type": file.content_type,
-            "attachment_url": f"/uploads/{unique_filename}"
-        })
+        delete_upload_file(project.attachment_path)
+        project_data.update(await save_upload_file(file))
     else:
         # Clear attachment info if no file provided
         project_data.update({

@@ -15,4 +15,5 @@ router = create_crud_router(
     update_schema=PublicationUpdate,
     response_schema=PublicationResponse,
     not_found_detail="Publication not found",
+    entity_name="Publication",
 )

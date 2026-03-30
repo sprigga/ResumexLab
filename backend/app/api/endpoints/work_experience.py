@@ -2,8 +2,6 @@ from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile,
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 import os
-import uuid
-from datetime import datetime, date
 from pathlib import Path
 from app.db.base import get_db
 from app.models.work_experience import WorkExperience
@@ -11,47 +9,18 @@ from app.schemas.work_experience import (
     WorkExperienceInDB,
     WorkExperienceCreate,
     WorkExperienceUpdate,
-    WorkExperienceWithProjects  # Added on 2025-11-30
+    WorkExperienceWithProjects
+)
+from app.api.upload_utils import (
+    UPLOAD_DIR,
+    ensure_upload_dir,
+    validate_file,
+    parse_date_string,
+    save_upload_file,
+    delete_upload_file,
 )
 
 router = APIRouter()
-
-# File upload configuration - added on 2025-12-22
-# Reason: Configure upload directory and allowed file types
-import os
-from pathlib import Path
-
-# Use relative path for Docker container (uploads directory in container root)
-# 已修改於 2025-01-12，原因：將檔案大小限制從 10MB 提高到 100MB
-UPLOAD_DIR = Path("uploads")
-ALLOWED_EXTENSIONS = {".pdf", ".doc", ".docx", ".txt", ".jpg", ".jpeg", ".png"}
-MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
-
-def ensure_upload_dir():
-    """Create upload directory if it doesn't exist"""
-    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-
-def validate_file(file: UploadFile) -> bool:
-    """Validate file type and size"""
-    # Check file extension
-    file_extension = os.path.splitext(file.filename)[1].lower()
-    if file_extension not in ALLOWED_EXTENSIONS:
-        return False
-
-    # Check file size
-    if hasattr(file, 'size') and file.size > MAX_FILE_SIZE:
-        return False
-
-    return True
-
-def parse_date_string(date_str: Optional[str]) -> Optional[date]:
-    """Parse date string to Python date object"""
-    if not date_str:
-        return None
-    try:
-        return datetime.strptime(date_str, "%Y-%m-%d").date()
-    except ValueError:
-        return None
 
 # Modified on 2025-11-30: Changed response_model to WorkExperienceWithProjects
 # Reason: Include projects in the API response
@@ -196,26 +165,7 @@ async def create_work_experience_with_file(
 
     # Handle file upload
     if file and file.filename:
-        ensure_upload_dir()
-
-        # Generate unique filename
-        file_extension = os.path.splitext(file.filename)[1]
-        unique_filename = f"{uuid.uuid4()}{file_extension}"
-        file_path = UPLOAD_DIR / unique_filename
-
-        # Save file
-        file_content = await file.read()
-        with open(file_path, "wb") as buffer:
-            buffer.write(file_content)
-
-        # Add file info to experience data
-        experience_data.update({
-            "attachment_name": file.filename,
-            "attachment_path": str(file_path),
-            "attachment_size": len(file_content),
-            "attachment_type": file.content_type,
-            "attachment_url": f"/uploads/{unique_filename}"
-        })
+        experience_data.update(await save_upload_file(file))
 
     # Create work experience
     db_experience = WorkExperience(**experience_data)
@@ -285,33 +235,9 @@ async def update_work_experience_with_file(
                 detail="Invalid file type or size. Allowed types: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG. Max size: 100MB"
             )
 
-        # Delete old file if exists
-        if experience.attachment_path:
-            old_path = Path(experience.attachment_path)
-            if old_path.exists():
-                try:
-                    old_path.unlink()
-                except Exception as e:
-                    print(f"Warning: Could not delete old file {old_path}: {e}")
-
-        ensure_upload_dir()
-
-        # Generate unique filename
-        file_extension = os.path.splitext(file.filename)[1]
-        unique_filename = f"{uuid.uuid4()}{file_extension}"
-        file_path = UPLOAD_DIR / unique_filename
-
-        # Save file
-        file_content = await file.read()
-        with open(file_path, "wb") as buffer:
-            buffer.write(file_content)
-
-        # Update file info
-        experience.attachment_name = file.filename
-        experience.attachment_path = str(file_path)
-        experience.attachment_size = len(file_content)
-        experience.attachment_type = file.content_type
-        experience.attachment_url = f"/uploads/{unique_filename}"
+        delete_upload_file(experience.attachment_path)
+        for key, value in (await save_upload_file(file)).items():
+            setattr(experience, key, value)
 
     db.commit()
     db.refresh(experience)
@@ -357,14 +283,7 @@ async def delete_work_experience(
 
     # Delete associated file if exists - added on 2025-12-22
     # Reason: Clean up file system when deleting work experience
-    if experience.attachment_path:
-        file_path = Path(experience.attachment_path)
-        if file_path.exists():
-            try:
-                file_path.unlink()
-            except Exception as e:
-                # Log error but continue with deletion
-                print(f"Warning: Could not delete file {file_path}: {e}")
+    delete_upload_file(experience.attachment_path)
 
     db.delete(experience)
     db.commit()

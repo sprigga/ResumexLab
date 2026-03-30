@@ -47,50 +47,50 @@ export const useResumeStore = defineStore('resume', () => {
     }
   }
 
-  // Entity CRUD actions generated via factory
-  const weActions = createEntityActions(workExperiences, loading, error, {
+  // Entity CRUD actions generated via factory (each has its own isolated loading/error)
+  const weActions = createEntityActions(workExperiences, {
     getAll: resumeAPI.getWorkExperiences,
     create: resumeAPI.createWorkExperience,
     update: resumeAPI.updateWorkExperience,
     delete: resumeAPI.deleteWorkExperience,
   })
 
-  const projActions = createEntityActions(projects, loading, error, {
+  const projActions = createEntityActions(projects, {
     getAll: resumeAPI.getProjects,
     create: resumeAPI.createProject,
     update: resumeAPI.updateProject,
     delete: resumeAPI.deleteProject,
   })
 
-  const eduActions = createEntityActions(education, loading, error, {
+  const eduActions = createEntityActions(education, {
     getAll: resumeAPI.getEducation,
     create: resumeAPI.createEducation,
     update: resumeAPI.updateEducation,
     delete: resumeAPI.deleteEducation,
   })
 
-  const certActions = createEntityActions(certifications, loading, error, {
+  const certActions = createEntityActions(certifications, {
     getAll: resumeAPI.getCertifications,
     create: resumeAPI.createCertification,
     update: resumeAPI.updateCertification,
     delete: resumeAPI.deleteCertification,
   })
 
-  const langActions = createEntityActions(languages, loading, error, {
+  const langActions = createEntityActions(languages, {
     getAll: resumeAPI.getLanguages,
     create: resumeAPI.createLanguage,
     update: resumeAPI.updateLanguage,
     delete: resumeAPI.deleteLanguage,
   })
 
-  const pubActions = createEntityActions(publications, loading, error, {
+  const pubActions = createEntityActions(publications, {
     getAll: resumeAPI.getPublications,
     create: resumeAPI.createPublication,
     update: resumeAPI.updatePublication,
     delete: resumeAPI.deletePublication,
   })
 
-  const ghActions = createEntityActions(githubProjects, loading, error, {
+  const ghActions = createEntityActions(githubProjects, {
     getAll: resumeAPI.getGithubProjects,
     create: resumeAPI.createGithubProject,
     update: resumeAPI.updateGithubProject,

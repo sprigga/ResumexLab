@@ -59,7 +59,6 @@ export function useCrudPanel({ defaultForm, fetch, create, update, delete: del, 
         ElMessage.success(`${entityName} created successfully`)
       }
       dialogVisible.value = false
-      await fetch()
     } catch {
       ElMessage.error(`Failed to save ${entityName}`)
     } finally {
@@ -81,7 +80,6 @@ export function useCrudPanel({ defaultForm, fetch, create, update, delete: del, 
     try {
       await del(id)
       ElMessage.success('Deleted successfully')
-      await fetch()
     } catch {
       ElMessage.error(`Failed to delete ${entityName}`)
     } finally {

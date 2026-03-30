@@ -15,4 +15,5 @@ router = create_crud_router(
     update_schema=LanguageUpdate,
     response_schema=LanguageResponse,
     not_found_detail="Language not found",
+    entity_name="Language",
 )

@@ -101,17 +101,11 @@ const handleLogin = async () => {
 </template>
 
 <style scoped>
-/* Applying global styles from style.css */
 .login-container {
   display: flex;
   justify-content: center;
   align-items: center;
   min-height: 100vh;
-  /* Original gradient - commented out on 2025-11-29 */
-  /* Reason: Applying consistent gradient background style from style.css */
-  /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
-
-  /* New gradient background from black to deep blue to gray */
   background: linear-gradient(to bottom, #000000 0%, #1a2332 50%, #404040 100%);
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -123,7 +117,7 @@ const handleLogin = async () => {
   position: relative;
 }
 
-/* Vignette effect - subtle inner shadow */
+/* Vignette effect */
 .login-container::before {
   content: '';
   position: fixed;
@@ -164,7 +158,6 @@ const handleLogin = async () => {
   margin-top: 20px;
 }
 
-/* Button styles from style.css */
 :deep(.el-button) {
   border-radius: 8px;
   font-family: inherit;
@@ -181,7 +174,6 @@ const handleLogin = async () => {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-/* Link styles from style.css */
 :deep(.el-link) {
   font-weight: 500;
   color: #646cff;

@@ -76,16 +76,9 @@ const menuItems = [
 </template>
 
 <style scoped>
-/* Applying global styles from style.css */
+/* ── AdminLayout-specific styles ── */
 .admin-layout {
   height: 100vh;
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 .el-aside {
@@ -149,11 +142,6 @@ const menuItems = [
 }
 
 .el-main {
-  /* Original background - commented out on 2025-11-29 */
-  /* Reason: Applying gradient background style from style.css */
-  /* background-color: #f0f2f5; */
-
-  /* New gradient background from black to deep blue to gray */
   background: linear-gradient(to bottom, #000000 0%, #1a2332 50%, #404040 100%);
   padding: 20px;
   position: relative;
@@ -178,8 +166,29 @@ const menuItems = [
   z-index: 1;
 }
 
-/* Button styles from style.css */
-:deep(.el-button) {
+/* ── Shared admin styles (cascade to all child views via :deep) ── */
+
+/* Font/typography — applied to all admin child views */
+.el-main :deep(*) {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Card styles */
+.el-main :deep(.el-card) {
+  padding: 2em;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Button styles */
+.el-main :deep(.el-button) {
   border-radius: 8px;
   padding: 0.6em 1.2em;
   font-size: 1em;
@@ -189,28 +198,31 @@ const menuItems = [
   transition: border-color 0.25s;
 }
 
-:deep(.el-button:hover) {
+.el-main :deep(.el-button:hover) {
   border-color: #646cff;
 }
 
-:deep(.el-button:focus),
-:deep(.el-button:focus-visible) {
+.el-main :deep(.el-button:focus),
+.el-main :deep(.el-button:focus-visible) {
   outline: 4px auto -webkit-focus-ring-color;
 }
 
-/* Light mode specific styles */
+/* Textarea left-align */
+.el-main :deep(.el-textarea__inner) {
+  text-align: left;
+}
+
+/* Light mode */
 @media (prefers-color-scheme: light) {
   .header-content h3 {
     color: #213547;
   }
 
   .el-main {
-    /* Light mode: use light gray background instead of gradient */
     background: #f0f2f5;
   }
 
   .el-main::before {
-    /* Remove vignette in light mode */
     display: none;
   }
 
@@ -219,7 +231,7 @@ const menuItems = [
     color: #747bff !important;
   }
 
-  :deep(.el-card) {
+  .el-main :deep(.el-card) {
     background-color: rgba(255, 255, 255, 1);
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   }

@@ -163,21 +163,8 @@ const handleDatabaseImport = async (event) => {
 </template>
 
 <style scoped>
-.import-data {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
 .import-data h1 {
   margin: 0 0 20px 0;
-  color: #2c3e50;
-  font-size: 3.2em;
-  line-height: 1.1;
 }
 
 .import-options h3 {

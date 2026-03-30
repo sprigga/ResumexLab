@@ -15,4 +15,5 @@ router = create_crud_router(
     update_schema=EducationUpdate,
     response_schema=EducationResponse,
     not_found_detail="Education record not found",
+    entity_name="Education record",
 )

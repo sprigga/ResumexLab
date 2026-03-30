@@ -217,19 +217,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* Applying global styles from style.css */
-/* Created on 2025-11-30 */
-/* Reason: Managing certification and language data in admin panel */
-.certification-edit {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
 .section {
   margin-bottom: 40px;
 }
@@ -239,53 +226,5 @@ onMounted(async () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
-}
-
-.certification-edit h1 {
-  margin: 0;
-  color: #2c3e50;
-  font-size: 3.2em;
-  line-height: 1.1;
-}
-
-:deep(.el-card) {
-  padding: 2em;
-  background-color: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-:deep(.el-button) {
-  border-radius: 8px;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-
-:deep(.el-button:hover) {
-  border-color: #646cff;
-}
-
-:deep(.el-button:focus),
-:deep(.el-button:focus-visible) {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-:deep(.el-textarea__inner) {
-  text-align: left;
-}
-
-@media (prefers-color-scheme: light) {
-  .certification-edit h1 {
-    color: #213547;
-  }
-
-  :deep(.el-card) {
-    background-color: rgba(255, 255, 255, 1);
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
-  }
 }
 </style>

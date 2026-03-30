@@ -15,4 +15,5 @@ router = create_crud_router(
     update_schema=GithubProjectUpdate,
     response_schema=GithubProjectResponse,
     not_found_detail="GitHub project not found",
+    entity_name="GitHub project",
 )

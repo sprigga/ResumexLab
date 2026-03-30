@@ -15,4 +15,5 @@ router = create_crud_router(
     update_schema=CertificationUpdate,
     response_schema=CertificationResponse,
     not_found_detail="Certification not found",
+    entity_name="Certification",
 )

@@ -7,7 +7,7 @@ Creates a complete CRUD APIRouter (GET /, GET /{id}, POST /, PUT /{id}, DELETE /
 for any SQLAlchemy model + Pydantic schema combination.
 """
 
-from typing import Type, List, Optional
+from typing import Type, List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -22,6 +22,7 @@ def create_crud_router(
     response_schema: Type[BaseModel],
     not_found_detail: str = "Record not found",
     order_by_field: str = "display_order",
+    entity_name: str = "Record",
 ) -> APIRouter:
     """
     Factory that returns an APIRouter with standard CRUD endpoints.
@@ -33,6 +34,7 @@ def create_crud_router(
         response_schema: Pydantic schema for responses
         not_found_detail: Error message for 404 responses
         order_by_field: Model attribute name to sort list results by
+        entity_name: Human-readable name used in success messages
     """
     router = APIRouter()
 
@@ -49,7 +51,7 @@ def create_crud_router(
 
     @router.post("/", response_model=response_schema)
     def create(item_data: create_schema, db: Session = Depends(get_db)):
-        db_item = model(**item_data.dict())
+        db_item = model(**item_data.model_dump())
         db.add(db_item)
         db.commit()
         db.refresh(db_item)
@@ -60,7 +62,7 @@ def create_crud_router(
         db_item = db.query(model).filter(model.id == item_id).first()
         if not db_item:
             raise HTTPException(status_code=404, detail=not_found_detail)
-        for key, value in item_data.dict(exclude_unset=True).items():
+        for key, value in item_data.model_dump(exclude_unset=True).items():
             setattr(db_item, key, value)
         db.commit()
         db.refresh(db_item)
@@ -73,6 +75,6 @@ def create_crud_router(
             raise HTTPException(status_code=404, detail=not_found_detail)
         db.delete(db_item)
         db.commit()
-        return {"message": f"{not_found_detail.replace(' not found', '')} deleted successfully"}
+        return {"message": f"{entity_name} deleted successfully"}
 
     return router
