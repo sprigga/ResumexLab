@@ -31,7 +31,7 @@
 
     ],
     "chat.useAgentSkills": true,
-    "editor.fontSize": 14,
+    "editor.fontSize": 16,
     "markdown.preview.fontSize": 14,
     "debug.console.fontSize": 14,
     "chat.editor.fontSize": 14,

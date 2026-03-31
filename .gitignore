@@ -161,8 +161,6 @@ backend/app/api/endpoints/__pycache__/
 backend/app/core/__pycache__/
 backend/app/models/__pycache__/
 backend/app/schemas/__pycache__/
-backend/data/resume.db
-backend/resume.db
 
 # Uploaded files (if needed, adjust path)
 backend/uploads/
