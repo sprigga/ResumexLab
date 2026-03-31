@@ -84,15 +84,16 @@ credentials.*
 # ============================================
 # Database Files
 # ============================================
-*.db
 *.db-journal
 *.sqlite
 *.sqlite3
 *.db-shm
 *.db-wal
-# 原本設定 (已註解於 2026-01-04，原因：需要排除備份檔案但保留主資料庫)
-# 新設定：排除備份檔案
-**/resume_backup_*.db
+# 不追蹤 backend/data 以外的 .db 檔案，但允許 backend/data 目錄
+*.db
+!backend/data/*.db
+# 排除 backend/data 中的備份檔案
+backend/data/resume_backup_*.db
 # Alembic 遷移備份
 backend/alembic/versions/*.py.bak
 
