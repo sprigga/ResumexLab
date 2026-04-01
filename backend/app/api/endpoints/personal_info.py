@@ -47,6 +47,7 @@ async def create_personal_info(
     current_user: User = Depends(get_current_user)
 ):
     """Create personal information (requires authentication)"""
+    # Modified on 2026-04-01, Reason: Issue #5 — add transaction rollback
     # Check if personal info already exists
     existing_info = db.query(PersonalInfo).first()
     if existing_info:
@@ -55,11 +56,15 @@ async def create_personal_info(
             detail="Personal information already exists. Use PUT to update."
         )
 
-    db_info = PersonalInfo(**info_data.model_dump())
-    db.add(db_info)
-    db.commit()
-    db.refresh(db_info)
-    return db_info
+    try:
+        db_info = PersonalInfo(**info_data.model_dump())
+        db.add(db_info)
+        db.commit()
+        db.refresh(db_info)
+        return db_info
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
 
 
 @router.put("/", response_model=PersonalInfoInDB)
@@ -69,18 +74,22 @@ async def update_personal_info(
     current_user: User = Depends(get_current_user)
 ):
     """Update personal information (requires authentication)"""
+    # Modified on 2026-04-01, Reason: Issue #5 — add transaction rollback
     info = db.query(PersonalInfo).first()
 
-    if not info:
-        # Create new if doesn't exist
-        info = PersonalInfo(**info_data.model_dump())
-        db.add(info)
-    else:
-        # Update existing
-        update_data = info_data.model_dump(exclude_unset=True)
-        for field, value in update_data.items():
-            setattr(info, field, value)
-
-    db.commit()
-    db.refresh(info)
-    return info
+    try:
+        if not info:
+            # Create new if doesn't exist
+            info = PersonalInfo(**info_data.model_dump())
+            db.add(info)
+        else:
+            # Update existing
+            update_data = info_data.model_dump(exclude_unset=True)
+            for field, value in update_data.items():
+                setattr(info, field, value)
+        db.commit()
+        db.refresh(info)
+        return info
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
