@@ -8,13 +8,20 @@ Updated: 2025-12-05 - Fixed database import to properly reload database connecti
 
 # 已修改於 2025-12-05，原因：移除 PDF 匯入、範例資料和資料庫管理功能，僅保留資料庫匯出/匯入
 # 已修改於 2025-12-05，原因：新增資料庫連接重載功能以修正匯入後資料未更新的問題
-from fastapi import APIRouter, UploadFile, File, HTTPException, status
+from fastapi import APIRouter, UploadFile, File, HTTPException, status, Depends
 from fastapi.responses import JSONResponse, FileResponse
 from pathlib import Path
 import shutil
 from datetime import datetime
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
+# 已新增於 2026-04-01，原因：修正 CRITICAL-4 — 匯出/匯入端點缺少身份驗證
+from app.api.endpoints.auth import get_current_user
+from app.models.user import User
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="", tags=["Import"])
 
@@ -35,9 +42,12 @@ MAX_DB_FILE_SIZE = 100 * 1024 * 1024  # 100MB
 # 已修正於 2025-12-01，原因：修正路徑解析以正確定位資料庫檔案，與 config.py 中 DATABASE_URL 一致
 # 已修正於 2025-12-05，原因：修正路徑錯誤，DATABASE_URL 相對於 backend 目錄而非專案根目錄
 @router.get("/database/export/")
-async def export_database():
+# 已修改於 2026-04-01，原因：修正 CRITICAL-4 — 新增身份驗證，防止未授權的資料外洩
+# 原簽名：async def export_database():
+async def export_database(current_user: User = Depends(get_current_user)):
     """
     Export the SQLite database file for backup or migration
+    Requires authentication.
     """
     try:
         # 已修正於 2025-12-05，原因：DATABASE_URL = "sqlite:///./data/resume.db" 相對於 backend 目錄
@@ -65,9 +75,10 @@ async def export_database():
             filename=export_filename
         )
     except Exception as e:
+        logger.error(f"Error exporting database: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error exporting database: {str(e)}"
+            detail="Error exporting database"
         )
 
 
@@ -76,10 +87,16 @@ async def export_database():
 # 已修正於 2025-12-05，原因：新增資料庫連接重載機制，修正匯入後資料未更新的問題
 # 已修正於 2025-12-05，原因：修正路徑錯誤，使用正確的 backend/data/resume.db 路徑
 @router.post("/database/import/")
-async def import_database(file: UploadFile = File(...)):
+# 已修改於 2026-04-01，原因：修正 CRITICAL-4 — 新增身份驗證，防止未授權覆寫資料庫
+# 原簽名：async def import_database(file: UploadFile = File(...)):
+async def import_database(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
     """
     Import a SQLite database file (for restoration or migration)
     WARNING: This will replace the current database!
+    Requires authentication.
 
     已修改於 2025-01-12，原因：新增檔案大小檢查，限制為 100MB
     """
@@ -157,9 +174,10 @@ async def import_database(file: UploadFile = File(...)):
             test_session.execute(text("SELECT 1"))
             test_session.close()
         except Exception as verify_error:
+            logger.error(f"Database import validation failed: {verify_error}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Imported database file is not valid: {str(verify_error)}"
+                detail="Imported database file is not valid"
             )
 
         return JSONResponse(
@@ -173,7 +191,8 @@ async def import_database(file: UploadFile = File(...)):
     except HTTPException:
         raise
     except Exception as e:
+        logger.error(f"Error importing database: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Error importing database: {str(e)}"
+            detail="Error importing database"
         )
