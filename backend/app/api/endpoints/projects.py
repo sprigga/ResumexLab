@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 from app.db.base import get_db
 from app.models.project import Project
 from app.schemas.project import ProjectCreate, ProjectUpdate, ProjectResponse
+from app.api.endpoints.auth import get_current_user
+from app.models.user import User
 from app.api.upload_utils import (
     validate_file,
     parse_date_string,
@@ -27,54 +29,77 @@ def get_projects(db: Session = Depends(get_db)):
     return projects
 
 
+# Modified on 2026-04-01, Reason: Issue #5 — add transaction rollback
 @router.get("/{project_id}", response_model=ProjectResponse)
 def get_project(project_id: int, db: Session = Depends(get_db)):
     """Get a specific project"""
     project = db.query(Project).filter(Project.id == project_id).first()
     if not project:
-        raise HTTPException(status_code=404, detail="Project not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
     return project
 
 
+# Modified on 2026-04-01, Reason: Issue #5 — add transaction rollback
 @router.post("/", response_model=ProjectResponse)
-def create_project(project: ProjectCreate, db: Session = Depends(get_db)):
+def create_project(project: ProjectCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Create a new project"""
-    db_project = Project(**project.model_dump())
-    db.add(db_project)
-    db.commit()
-    db.refresh(db_project)
-    return db_project
+    try:
+        db_project = Project(**project.model_dump())
+        db.add(db_project)
+        db.commit()
+        db.refresh(db_project)
+        return db_project
+    except HTTPException:
+        raise
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
 
 
+# Modified on 2026-04-01, Reason: Issue #5 — add transaction rollback
 @router.put("/{project_id}", response_model=ProjectResponse)
-def update_project(project_id: int, project: ProjectUpdate, db: Session = Depends(get_db)):
+def update_project(project_id: int, project: ProjectUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Update a project"""
-    db_project = db.query(Project).filter(Project.id == project_id).first()
-    if not db_project:
-        raise HTTPException(status_code=404, detail="Project not found")
+    try:
+        db_project = db.query(Project).filter(Project.id == project_id).first()
+        if not db_project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
-    for key, value in project.model_dump(exclude_unset=True).items():
-        setattr(db_project, key, value)
+        for key, value in project.model_dump(exclude_unset=True).items():
+            setattr(db_project, key, value)
 
-    db.commit()
-    db.refresh(db_project)
-    return db_project
+        db.commit()
+        db.refresh(db_project)
+        return db_project
+    except HTTPException:
+        raise
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
 
 
+# Modified on 2026-04-01, Reason: Issue #5 — add transaction rollback
 @router.delete("/{project_id}")
-def delete_project(project_id: int, db: Session = Depends(get_db)):
+def delete_project(project_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """Delete a project"""
-    db_project = db.query(Project).filter(Project.id == project_id).first()
-    if not db_project:
-        raise HTTPException(status_code=404, detail="Project not found")
+    try:
+        db_project = db.query(Project).filter(Project.id == project_id).first()
+        if not db_project:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Project not found")
 
-    db.delete(db_project)
-    db.commit()
-    return {"message": "Project deleted successfully"}
+        db.delete(db_project)
+        db.commit()
+        return {"message": "Project deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
 
 
 # New file upload creation endpoint - added on 2025-12-22
 # Reason: Handle file upload for project creation
+# Modified on 2026-04-01, Reason: Issue #5 — add transaction rollback
 @router.post("/upload", response_model=ProjectResponse)
 async def create_project_with_file(
     work_experience_id: Optional[int] = Form(None),
@@ -89,47 +114,55 @@ async def create_project_with_file(
     end_date: Optional[str] = Form(None),
     display_order: int = Form(0),
     file: Optional[UploadFile] = File(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Create project with file attachment"""
-    # Validate file if provided
-    if file and file.filename:
-        if not validate_file(file):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid file type or size. Allowed types: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG. Max size: 100MB"
-            )
+    try:
+        # Validate file if provided
+        if file and file.filename:
+            if not validate_file(file):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid file type or size. Allowed types: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG. Max size: 100MB"
+                )
 
-    # Prepare project data with proper date parsing - fixed on 2025-12-22
-    # Reason: Convert date strings to Python date objects for SQLite compatibility
-    project_data = {
-        "work_experience_id": work_experience_id,
-        "title_zh": title_zh,
-        "title_en": title_en,
-        "description_zh": description_zh,
-        "description_en": description_en,
-        "technologies": technologies,
-        "tools": tools,
-        "environment": environment,
-        "start_date": parse_date_string(start_date),
-        "end_date": parse_date_string(end_date),
-        "display_order": display_order,
-    }
+        # Prepare project data with proper date parsing - fixed on 2025-12-22
+        # Reason: Convert date strings to Python date objects for SQLite compatibility
+        project_data = {
+            "work_experience_id": work_experience_id,
+            "title_zh": title_zh,
+            "title_en": title_en,
+            "description_zh": description_zh,
+            "description_en": description_en,
+            "technologies": technologies,
+            "tools": tools,
+            "environment": environment,
+            "start_date": parse_date_string(start_date),
+            "end_date": parse_date_string(end_date),
+            "display_order": display_order,
+        }
 
-    # Handle file upload
-    if file and file.filename:
-        project_data.update(await save_upload_file(file))
+        # Handle file upload
+        if file and file.filename:
+            project_data.update(await save_upload_file(file))
 
-    # Create project
-    db_project = Project(**project_data)
-    db.add(db_project)
-    db.commit()
-    db.refresh(db_project)
-    return db_project
+        # Create project
+        db_project = Project(**project_data)
+        db.add(db_project)
+        db.commit()
+        db.refresh(db_project)
+        return db_project
+    except HTTPException:
+        raise
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
 
 
 # New file upload update endpoint - added on 2025-12-22
 # Reason: Handle file upload for project updates
+# Modified on 2026-04-01, Reason: Issue #5 — add transaction rollback
 @router.put("/{project_id}/upload", response_model=ProjectResponse)
 async def update_project_with_file(
     project_id: int,
@@ -145,72 +178,81 @@ async def update_project_with_file(
     end_date: Optional[str] = Form(None),
     display_order: int = Form(0),
     file: Optional[UploadFile] = File(None),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """Update project with file attachment"""
-    # Get existing project
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
-        )
-
-    # Validate file if provided
-    if file and file.filename:
-        if not validate_file(file):
+    try:
+        # Get existing project
+        project = db.query(Project).filter(Project.id == project_id).first()
+        if not project:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid file type or size. Allowed types: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG. Max size: 100MB"
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found"
             )
 
-    # Prepare project data with proper date parsing - fixed on 2025-12-22
-    # Reason: Convert date strings to Python date objects for SQLite compatibility
-    project_data = {
-        "work_experience_id": work_experience_id,
-        "title_zh": title_zh,
-        "title_en": title_en,
-        "description_zh": description_zh,
-        "description_en": description_en,
-        "technologies": technologies,
-        "tools": tools,
-        "environment": environment,
-        "start_date": parse_date_string(start_date),
-        "end_date": parse_date_string(end_date),
-        "display_order": display_order,
-    }
+        # Validate file if provided
+        if file and file.filename:
+            if not validate_file(file):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid file type or size. Allowed types: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG. Max size: 100MB"
+                )
 
-    # Handle file upload
-    if file and file.filename:
-        delete_upload_file(project.attachment_path)
-        project_data.update(await save_upload_file(file))
-    else:
-        # Clear attachment info if no file provided
-        project_data.update({
-            "attachment_name": None,
-            "attachment_path": None,
-            "attachment_size": None,
-            "attachment_type": None,
-            "attachment_url": None
-        })
+        # Prepare project data with proper date parsing - fixed on 2025-12-22
+        # Reason: Convert date strings to Python date objects for SQLite compatibility
+        project_data = {
+            "work_experience_id": work_experience_id,
+            "title_zh": title_zh,
+            "title_en": title_en,
+            "description_zh": description_zh,
+            "description_en": description_en,
+            "technologies": technologies,
+            "tools": tools,
+            "environment": environment,
+            "start_date": parse_date_string(start_date),
+            "end_date": parse_date_string(end_date),
+            "display_order": display_order,
+        }
 
-    # Update project
-    for key, value in project_data.items():
-        setattr(project, key, value)
+        # Handle file upload
+        if file and file.filename:
+            delete_upload_file(project.attachment_path)
+            project_data.update(await save_upload_file(file))
+        else:
+            # Clear attachment info if no file provided
+            project_data.update({
+                "attachment_name": None,
+                "attachment_path": None,
+                "attachment_size": None,
+                "attachment_type": None,
+                "attachment_url": None
+            })
 
-    db.commit()
-    db.refresh(project)
-    return project
+        # Update project
+        for key, value in project_data.items():
+            setattr(project, key, value)
+
+        db.commit()
+        db.refresh(project)
+        return project
+    except HTTPException:
+        raise
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
 
 
 # New endpoint to update attachment name only - added on 2025-01-15
 # Reason: Allow updating attachment display name without uploading a new file
 # Modified on 2025-01-15: Changed from Form to Body for better compatibility with axios
+# Modified on 2026-04-01, Reason: Issue #5 — add transaction rollback
 @router.patch("/{project_id}/attachment-name", response_model=ProjectResponse)
 def update_project_attachment_name(
     project_id: int,
     attachment_name: str = Body(..., embed=True),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Update only the attachment_name field of a project
@@ -222,18 +264,24 @@ def update_project_attachment_name(
     logger = logging.getLogger(__name__)
     logger.info(f"Received attachment_name update request: project_id={project_id}, attachment_name={attachment_name}")
 
-    # Get existing project
-    project = db.query(Project).filter(Project.id == project_id).first()
-    if not project:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Project not found"
-        )
+    try:
+        # Get existing project
+        project = db.query(Project).filter(Project.id == project_id).first()
+        if not project:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Project not found"
+            )
 
-    # Update only the attachment_name field
-    project.attachment_name = attachment_name
+        # Update only the attachment_name field
+        project.attachment_name = attachment_name
 
-    db.commit()
-    db.refresh(project)
-    logger.info(f"Updated attachment_name for project {project_id} to '{attachment_name}'")
-    return project
+        db.commit()
+        db.refresh(project)
+        logger.info(f"Updated attachment_name for project {project_id} to '{attachment_name}'")
+        return project
+    except HTTPException:
+        raise
+    except Exception:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
