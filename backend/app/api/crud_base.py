@@ -65,6 +65,8 @@ def create_crud_router(
             db.commit()
             db.refresh(db_item)
             return db_item
+        except HTTPException:
+            raise
         except Exception:
             db.rollback()
             raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
