@@ -8,11 +8,13 @@ for any SQLAlchemy model + Pydantic schema combination.
 """
 
 from typing import Type, List
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 
 from app.db.base import get_db
+from app.api.endpoints.auth import get_current_user
+from app.models.user import User
 
 
 def create_crud_router(
@@ -42,39 +44,72 @@ def create_crud_router(
     def get_all(db: Session = Depends(get_db)):
         return db.query(model).order_by(getattr(model, order_by_field)).all()
 
+    # Modified on 2026-04-01, Reason: Issue #8 — standardize status codes
     @router.get("/{item_id}", response_model=response_schema)
     def get_one(item_id: int, db: Session = Depends(get_db)):
         item = db.query(model).filter(model.id == item_id).first()
         if not item:
-            raise HTTPException(status_code=404, detail=not_found_detail)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=not_found_detail)
         return item
 
+    # Modified on 2026-04-01, Reason: Issue #5 — add transaction rollback
     @router.post("/", response_model=response_schema)
-    def create(item_data: create_schema, db: Session = Depends(get_db)):
-        db_item = model(**item_data.model_dump())
-        db.add(db_item)
-        db.commit()
-        db.refresh(db_item)
-        return db_item
+    def create(
+        item_data: create_schema,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user),
+    ):
+        try:
+            db_item = model(**item_data.model_dump())
+            db.add(db_item)
+            db.commit()
+            db.refresh(db_item)
+            return db_item
+        except Exception:
+            db.rollback()
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
 
+    # Modified on 2026-04-01, Reason: Issue #5 — add transaction rollback
     @router.put("/{item_id}", response_model=response_schema)
-    def update(item_id: int, item_data: update_schema, db: Session = Depends(get_db)):
-        db_item = db.query(model).filter(model.id == item_id).first()
-        if not db_item:
-            raise HTTPException(status_code=404, detail=not_found_detail)
-        for key, value in item_data.model_dump(exclude_unset=True).items():
-            setattr(db_item, key, value)
-        db.commit()
-        db.refresh(db_item)
-        return db_item
+    def update(
+        item_id: int,
+        item_data: update_schema,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user),
+    ):
+        try:
+            db_item = db.query(model).filter(model.id == item_id).first()
+            if not db_item:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=not_found_detail)
+            for key, value in item_data.model_dump(exclude_unset=True).items():
+                setattr(db_item, key, value)
+            db.commit()
+            db.refresh(db_item)
+            return db_item
+        except HTTPException:
+            raise
+        except Exception:
+            db.rollback()
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
 
+    # Modified on 2026-04-01, Reason: Issue #5 — add transaction rollback
     @router.delete("/{item_id}")
-    def delete(item_id: int, db: Session = Depends(get_db)):
-        db_item = db.query(model).filter(model.id == item_id).first()
-        if not db_item:
-            raise HTTPException(status_code=404, detail=not_found_detail)
-        db.delete(db_item)
-        db.commit()
-        return {"message": f"{entity_name} deleted successfully"}
+    def delete(
+        item_id: int,
+        db: Session = Depends(get_db),
+        current_user: User = Depends(get_current_user),
+    ):
+        try:
+            db_item = db.query(model).filter(model.id == item_id).first()
+            if not db_item:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=not_found_detail)
+            db.delete(db_item)
+            db.commit()
+            return {"message": f"{entity_name} deleted successfully"}
+        except HTTPException:
+            raise
+        except Exception:
+            db.rollback()
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database error occurred")
 
     return router
