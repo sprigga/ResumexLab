@@ -258,6 +258,8 @@ resumexlab/
 │   │   │   │   ├── github_projects.py    # GitHub 專案 CRUD
 │   │   │   │   └── import_data.py        # 資料庫匯入 / 匯出
 │   │   │   └── crud_base.py              # CRUD Router 工廠函數
+│   │   ├── services/
+│   │   │   └── import_resume_service.py  # 資料庫匯入 / 匯出邏輯
 │   │   ├── core/
 │   │   │   ├── config.py                 # 設定（含 ADMIN_USERNAME/PASSWORD 必填）
 │   │   │   └── security.py               # JWT 生成 / 驗證 / bcrypt
@@ -356,9 +358,11 @@ resumexlab/
 │   └── DEPLOYMENT_GUIDE.md
 │
 ├── docs/                             # 文件目錄
-│   ├── DOCKER_COMPOSE_USAGE.md
 │   ├── code_review/
-│   └── plans/
+│   ├── design/
+│   ├── features/
+│   ├── plans/
+│   └── setup/
 │
 ├── docker-compose.yml                # 生產環境 Docker 配置
 ├── docker-compose.dev.yml            # 開發環境 Docker 配置
@@ -418,7 +422,7 @@ docker-compose -f docker-compose.dev.yml up -d
 # API 文件: http://localhost:8001/docs
 ```
 
-詳細部署說明請參考 [`docs/DOCKER_COMPOSE_USAGE.md`](./docs/DOCKER_COMPOSE_USAGE.md) 及 [`script/DEPLOYMENT_GUIDE.md`](./script/DEPLOYMENT_GUIDE.md)。
+詳細部署說明請參考 [`script/DEPLOYMENT_GUIDE.md`](./script/DEPLOYMENT_GUIDE.md)。
 
 ---
 
@@ -603,8 +607,7 @@ work_experience
 
 | 版本 | 說明 |
 |------|------|
-| `d711f173f9e3` | 初始 Schema — 建立所有資料表（使用 IF NOT EXISTS 冪等設計） |
-| `ce10aaa23747` | 新增附件欄位 — 在 work_experience 及 projects 新增 attachment_* 欄位 |
+| `d711f173f9e3` | 初始 Schema — 建立所有資料表（含 attachment_* 欄位，使用 IF NOT EXISTS 冪等設計） |
 
 ---
 
@@ -785,7 +788,7 @@ npm run preview
 - ✅ Gzip 壓縮啟用
 - ✅ 靜態資源快取策略
 
-詳細文檔請參考 `docs/plans/2026-02-27-code-simplification-analysis.md`
+詳細文檔請參考 [`docs/plans/2026-02-27-code-simplification-analysis.md`](./docs/plans/2026-02-27-code-simplification-analysis.md)
 
 ---
 
@@ -855,6 +858,6 @@ Issues & 功能請求: GitHub Issues
 
 ---
 
-**版本**: 1.0.0 | **最後更新**: 2026年2月27日 | **狀態**: Production Ready ✅
+**版本**: 1.0.0 | **最後更新**: 2026年4月1日 | **狀態**: Production Ready ✅
 
 **架構**: Factory Pattern + Composables | **程式碼減少**: ~30% (通過抽象化)

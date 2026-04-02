@@ -10,6 +10,14 @@ echo "=== Starting Backend Entrypoint ==="
 # Wait a moment for filesystem to be ready
 sleep 1
 
+# --- Alembic revision guard ---
+# 修改日期: 2026-04-02
+# 說明: 檢查 DB 的 alembic_version 是否有對應的 migration 檔案。
+#        若 revision 已被 squash 刪除，自動更新 alembic_version 為 head revision，
+#        避免容器因 "Can't locate revision" 錯誤進入重啟迴圈。
+python3 /app/alembic_guard.py /app/data/resume.db /app/alembic/versions
+# --- End revision guard ---
+
 echo "=== Running Alembic Migrations ==="
 
 # Run alembic upgrade to head

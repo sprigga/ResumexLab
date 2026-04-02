@@ -131,6 +131,8 @@ alembic --help
 
 ### ❌ 問題 1：`table already exists` 錯誤
 
+> **注意**：2026-04-01 已移除 `main.py` 中的 `Base.metadata.create_all()`，此問題在新部署中不應再發生。以下文件保留供歷史參考或舊版環境使用。
+
 **錯誤訊息**：
 ```bash
 sqlalchemy.exc.OperationalError: (sqlite3.OperationalError) table certifications already exists
@@ -452,6 +454,20 @@ alembic current
 docker restart resumexlab-backend
 
 # 測試 API 是否正常運作
+curl http://localhost:58433/health
+```
+
+---
+
+### 🆕 首次部署（新環境）
+
+**重要**：自 2026-04-01 起，`Base.metadata.create_all()` 已從應用啟動流程中移除，schema 由 Alembic 單一管理。新環境**必須先執行 migration**，應用才能正常啟動：
+
+```bash
+# 首次部署必須先執行
+docker exec resumexlab-backend alembic upgrade head
+
+# 再啟動或確認應用正常
 curl http://localhost:58433/health
 ```
 
@@ -811,6 +827,7 @@ alembic upgrade head
 |------|------|----------|
 | 1.0 | 2025-12-30 | 初版建立，記錄常見問題與解決方案 |
 | 1.1 | 2026-01-04 | 新增 SQLite ALTER COLUMN 問題及解決方案，新增實際案例範例 |
+| 1.2 | 2026-04-01 | 移除 `Base.metadata.create_all()`，改由純 Alembic 管理 schema；新增首次部署前置條件說明 |
 
 ---
 
@@ -872,6 +889,6 @@ alembic upgrade head --verbose  # 詳細輸出模式
 
 ---
 
-**最後更新**: 2026-01-04
+**最後更新**: 2026-04-01
 **維護者**: Polo (林鴻全)
 **專案**: ResumeXLab

@@ -1,4 +1,4 @@
-"""初始化資料庫表
+"""初始化資料庫表（含附件欄位）
 
 Revision ID: d711f173f9e3
 Revises:
@@ -8,6 +8,12 @@ Modified: 2026-02-18
 Reason: Added IF NOT EXISTS clauses to make migration idempotent.
 This fixes the "table already exists" error when both Alembic and
 SQLAlchemy's Base.metadata.create_all() try to create tables.
+
+Squash: 2026-04-01
+此 migration 已合併原 ce10aaa23747（添加附件欄位到 work_experience 和 projects 表）的內容。
+work_experience 和 projects 表的 attachment_* 欄位（attachment_name、attachment_path、
+attachment_size、attachment_type、attachment_url）從一開始就包含在本 migration 中，
+ce10aaa23747 是歷史遺留的冗餘 migration，已刪除。
 """
 
 from typing import Sequence, Union

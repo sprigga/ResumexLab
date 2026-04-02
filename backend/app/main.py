@@ -7,7 +7,7 @@ from starlette.responses import JSONResponse
 import os
 from pathlib import Path
 from app.core.config import settings
-from app.db.base import engine, Base, SessionLocal
+from app.db.base import engine, SessionLocal
 from app.db.init_db import init_db
 # 已修改於 2025-11-30，原因：新增所有履歷資料相關的 API 端點
 from app.api.endpoints import (
@@ -37,9 +37,6 @@ if database_url.startswith("sqlite:///"):
         # This ensures database is created in the correct location regardless of where uvicorn is started
         database_path = os.path.abspath(database_path)
     Path(database_path).parent.mkdir(parents=True, exist_ok=True)
-
-# Create database tables
-Base.metadata.create_all(bind=engine)
 
 # Initialize database
 db = SessionLocal()
